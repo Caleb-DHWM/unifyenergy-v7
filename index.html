@@ -535,90 +535,39 @@ function loadRealHDR(renderers, scenes){
   );
 }
 
-/* ===== PROCEDURAL TEXTURE MAPS FOR PHOTOREALISTIC METAL ===== */
-/* Generates a normal map encoding corrugated steel surface normals + micro-scratches */
-function makeCorrugatedNormalMap(w,h,corrCount,orientation){
-  orientation=orientation||'horizontal';
-  const c=document.createElement('canvas');c.width=w;c.height=h;
-  const cx=c.getContext('2d');
-  // Base normal: pointing straight out (128,128,255)
-  cx.fillStyle='rgb(128,128,255)';cx.fillRect(0,0,w,h);
-  const imgData=cx.getImageData(0,0,w,h);
-  const d=imgData.data;
-  for(let y=0;y<h;y++){
-    for(let x=0;x<w;x++){
-      const idx=(y*w+x)*4;
-      // Corrugation normals -- oscillating surface slope
-      let u=orientation==='horizontal'?x/w:y/h;
-      const slope=Math.cos(u*corrCount*Math.PI*2);
-      // Normal map encodes slope as deviation from 128
-      if(orientation==='horizontal'){
-        d[idx]=Math.floor(128+slope*60); // R = X normal
-        d[idx+1]=128; // G = Y normal (flat)
-      } else {
-        d[idx]=128;
-        d[idx+1]=Math.floor(128+slope*60);
-      }
-      // Micro-scratches -- tiny random normal perturbations
-      const scratch=(Math.random()-.5)*12;
-      d[idx]+=scratch;
-      d[idx+1]+=(Math.random()-.5)*8;
-      // Occasional horizontal scratch lines
-      if(Math.random()<.003){
-        const scrLen=Math.floor(Math.random()*40)+10;
-        for(let sx=0;sx<scrLen&&x+sx<w;sx++){
-          const si=idx+sx*4;
-          if(si+2<d.length){d[si]=Math.floor(128+(Math.random()-.5)*30);d[si+1]=Math.floor(128+25);}
-        }
-      }
-      d[idx+2]=255; // B = Z (always pointing mostly outward)
-      d[idx+3]=255;
-    }
-  }
-  cx.putImageData(imgData,0,0);
-  const tex=new THREE.CanvasTexture(c);
+/* ===== REAL PBR TEXTURES FROM POLY HAVEN CDN (CC0 License) ===== */
+/* Photographed/scanned corrugated iron surface -- massively better than procedural canvas */
+const texLoader=new THREE.TextureLoader();
+texLoader.crossOrigin='anonymous';
+
+function loadPBR(url){
+  const tex=texLoader.load(url);
   tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
+  tex.colorSpace=THREE.LinearSRGBColorSpace;
+  return tex;
+}
+function loadPBRColor(url){
+  const tex=texLoader.load(url);
+  tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
+  tex.colorSpace=THREE.SRGBColorSpace;
   return tex;
 }
 
-/* Generates a roughness map with subtle weathering and wear patterns */
-function makeMetalRoughnessMap(w,h){
-  const c=document.createElement('canvas');c.width=w;c.height=h;
-  const cx=c.getContext('2d');
-  // Base roughness (medium gray = moderate roughness)
-  cx.fillStyle='rgb(70,70,70)';cx.fillRect(0,0,w,h);
-  // Random noise for surface imperfections
-  const imgData=cx.getImageData(0,0,w,h);
-  const d=imgData.data;
-  for(let i=0;i<d.length;i+=4){
-    const noise=Math.floor(Math.random()*40-20);
-    const v=Math.max(30,Math.min(120,70+noise));
-    d[i]=v;d[i+1]=v;d[i+2]=v;d[i+3]=255;
-  }
-  // Wear streaks (slightly smoother/shinier patches)
-  for(let s=0;s<8;s++){
-    const sy=Math.floor(Math.random()*h);
-    const sx=Math.floor(Math.random()*w);
-    const sw=Math.floor(Math.random()*w*.3)+20;
-    const sh=Math.floor(Math.random()*6)+2;
-    for(let y=sy;y<sy+sh&&y<h;y++){
-      for(let x=sx;x<sx+sw&&x<w;x++){
-        const idx=(y*w+x)*4;
-        const v=Math.max(20,d[idx]-25);
-        d[idx]=v;d[idx+1]=v;d[idx+2]=v;
-      }
-    }
-  }
-  cx.putImageData(imgData,0,0);
-  const tex=new THREE.CanvasTexture(c);
-  tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
-  return tex;
-}
+/* 2k normal map for high-detail surface normals (scratches, weathering, grain, corrugation ridges) */
+const corrNormalMap=loadPBR('https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/corrugated_iron/corrugated_iron_nor_gl_2k.jpg');
+/* 1k roughness map for realistic reflectivity variation across the surface */
+const corrRoughMap=loadPBR('https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/corrugated_iron/corrugated_iron_rough_1k.jpg');
+/* 1k metalness map for accurate metal/non-metal surface variation */
+const corrMetalMap=loadPBR('https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/corrugated_iron/corrugated_iron_metal_1k.jpg');
+/* 1k AO map for baked ambient occlusion in the corrugation grooves */
+const corrAOMap=loadPBR('https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/corrugated_iron/corrugated_iron_ao_1k.jpg');
+/* Diffuse/color map -- real photographed corrugated iron surface */
+const corrDiffMap=loadPBRColor('https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/corrugated_iron/corrugated_iron_diff_1k.jpg');
 
-/* Create all texture maps once and reuse */
-const wallNormalH=makeCorrugatedNormalMap(1024,512,32,'horizontal');
-const wallNormalV=makeCorrugatedNormalMap(512,512,14,'horizontal');
-const metalRoughMap=makeMetalRoughnessMap(512,512);
+/* Backward-compatible aliases used by buildContainer / buildContainerDetailed */
+const wallNormalH=corrNormalMap;
+const wallNormalV=corrNormalMap;
+const metalRoughMap=corrRoughMap;
 
 /* ===== HERO 3D ===== */
 const hCanvas=document.getElementById('hero-3d');
@@ -903,15 +852,15 @@ function buildContainer(scale=1){
   const g=new THREE.Group();
   const s=scale;
   const W=5*s,H=1.4*s,D=2*s;
-  // Dark charcoal steel -- photorealistic with normal maps for surface detail
-  const frameMat=new THREE.MeshPhysicalMaterial({color:0x0e0e0e,metalness:.95,roughness:.2,clearcoat:.25,clearcoatRoughness:.2,envMapIntensity:2.0,roughnessMap:metalRoughMap});
-  const wallMat=new THREE.MeshPhysicalMaterial({color:0x121212,metalness:.93,roughness:.22,envMapIntensity:2.2,normalMap:wallNormalH,normalScale:new THREE.Vector2(.6,.6),roughnessMap:metalRoughMap});
-  const wallMatV=new THREE.MeshPhysicalMaterial({color:0x121212,metalness:.93,roughness:.22,envMapIntensity:2.2,normalMap:wallNormalV,normalScale:new THREE.Vector2(.6,.6),roughnessMap:metalRoughMap});
-  const ccMat=new THREE.MeshPhysicalMaterial({color:0x080808,metalness:.97,roughness:.12,clearcoat:.5,clearcoatRoughness:.1,envMapIntensity:2.0});
+  // Dark charcoal steel -- real PBR textures from Poly Haven for photorealistic metal
+  const frameMat=new THREE.MeshPhysicalMaterial({color:0x0e0e0e,metalness:.95,roughness:.2,clearcoat:.25,clearcoatRoughness:.2,envMapIntensity:2.5,roughnessMap:corrRoughMap});
+  const wallMat=new THREE.MeshPhysicalMaterial({color:0x0a0a0a,metalness:.93,roughness:.25,envMapIntensity:2.8,map:corrDiffMap,normalMap:corrNormalMap,normalScale:new THREE.Vector2(1.2,1.2),roughnessMap:corrRoughMap,metalnessMap:corrMetalMap,aoMap:corrAOMap,aoMapIntensity:.6});
+  const wallMatV=new THREE.MeshPhysicalMaterial({color:0x0a0a0a,metalness:.93,roughness:.25,envMapIntensity:2.8,map:corrDiffMap,normalMap:corrNormalMap,normalScale:new THREE.Vector2(1.2,1.2),roughnessMap:corrRoughMap,metalnessMap:corrMetalMap,aoMap:corrAOMap,aoMapIntensity:.6});
+  const ccMat=new THREE.MeshPhysicalMaterial({color:0x080808,metalness:.97,roughness:.12,clearcoat:.5,clearcoatRoughness:.1,envMapIntensity:2.5});
   const darkVoid=new THREE.MeshPhysicalMaterial({color:0x030305,metalness:.9,roughness:.3});
 
-  // Floor -- diamond plate steel with subtle reflection
-  const floorMat=new THREE.MeshPhysicalMaterial({color:0x060606,metalness:.8,roughness:.45,envMapIntensity:1.0,roughnessMap:metalRoughMap});
+  // Floor -- diamond plate steel with real PBR roughness for subtle reflection
+  const floorMat=new THREE.MeshPhysicalMaterial({color:0x060606,metalness:.8,roughness:.45,envMapIntensity:1.2,roughnessMap:corrRoughMap,normalMap:corrNormalMap,normalScale:new THREE.Vector2(.3,.3)});
   const floor=new THREE.Mesh(new THREE.BoxGeometry(W,.06*s,D),floorMat);
   floor.receiveShadow=true;floor.castShadow=true;g.add(floor);
   // Floor cross-members (structural steel beams underneath)
@@ -926,12 +875,16 @@ function buildContainer(scale=1){
   // Corrugated left wall -- deeper corrugation with normal map
   const leftWall=new THREE.Mesh(makeCorrugatedGeo(D,H,14,.028*s,8),wallMatV);
   leftWall.position.set(-W/2,H/2,0);leftWall.rotation.y=Math.PI/2;leftWall.castShadow=true;g.add(leftWall);
-  // Right wall - partial transparent cutaway with corrugation
-  const rwMat=new THREE.MeshPhysicalMaterial({color:0x0a0e14,metalness:.9,roughness:.22,transparent:true,opacity:.1,envMapIntensity:1.8,normalMap:wallNormalV,normalScale:new THREE.Vector2(.3,.3)});
-  const rw=new THREE.Mesh(makeCorrugatedGeo(D*.35,H,5,.018*s,6),rwMat);
-  rw.position.set(W/2,H/2,-D*.32);rw.rotation.y=Math.PI/2;g.add(rw);
+  // Right wall - partially cut away to reveal interior; rear portion is solid metal
+  const rwSolidMat=new THREE.MeshPhysicalMaterial({color:0x0a0a0a,metalness:.93,roughness:.25,envMapIntensity:2.5,map:corrDiffMap,normalMap:corrNormalMap,normalScale:new THREE.Vector2(1.0,1.0),roughnessMap:corrRoughMap,metalnessMap:corrMetalMap,aoMap:corrAOMap,aoMapIntensity:.5});
+  const rwSolid=new THREE.Mesh(makeCorrugatedGeo(D*.45,H,7,.028*s,8),rwSolidMat);
+  rwSolid.position.set(W/2,H/2,-D*.28);rwSolid.rotation.y=Math.PI/2;rwSolid.castShadow=true;g.add(rwSolid);
+  // Right wall front portion - translucent cutaway hint
+  const rwGlassMat=new THREE.MeshPhysicalMaterial({color:0x0a1020,metalness:.7,roughness:.15,transparent:true,opacity:.12,envMapIntensity:1.5,normalMap:corrNormalMap,normalScale:new THREE.Vector2(.4,.4)});
+  const rwGlass=new THREE.Mesh(makeCorrugatedGeo(D*.35,H*.7,5,.012*s,6),rwGlassMat);
+  rwGlass.position.set(W/2,H*.4,D*.22);rwGlass.rotation.y=Math.PI/2;g.add(rwGlass);
   // Roof - barely visible dark glass
-  const rf=new THREE.Mesh(new THREE.BoxGeometry(W,.025*s,D),new THREE.MeshPhysicalMaterial({color:0x0a0e14,metalness:.6,roughness:.4,transparent:true,opacity:.08}));
+  const rf=new THREE.Mesh(new THREE.BoxGeometry(W,.025*s,D),new THREE.MeshPhysicalMaterial({color:0x0a0e14,metalness:.6,roughness:.4,transparent:true,opacity:.06}));
   rf.position.y=H;g.add(rf);
   // Corner posts (dark steel)
   [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([x,z])=>{
@@ -988,10 +941,10 @@ function buildContainerDetailed(){
   const interactive=[];
   const W=5,H=1.4,D=2;
 
-  // Shared materials -- dark industrial with normal/roughness maps for realism
-  const frameMat=new THREE.MeshPhysicalMaterial({color:0x0e0e0e,metalness:.95,roughness:.18,clearcoat:.2,envMapIntensity:2.8,roughnessMap:metalRoughMap});
-  const pipeMat=new THREE.MeshPhysicalMaterial({color:0x161616,metalness:.92,roughness:.14,envMapIntensity:2.5,roughnessMap:metalRoughMap});
-  const copperMat=new THREE.MeshPhysicalMaterial({color:0x553322,metalness:.94,roughness:.1,envMapIntensity:2.5,clearcoat:.3});
+  // Shared materials -- dark industrial with real PBR textures
+  const frameMat=new THREE.MeshPhysicalMaterial({color:0x0e0e0e,metalness:.95,roughness:.18,clearcoat:.2,envMapIntensity:3.0,roughnessMap:corrRoughMap,normalMap:corrNormalMap,normalScale:new THREE.Vector2(.4,.4)});
+  const pipeMat=new THREE.MeshPhysicalMaterial({color:0x161616,metalness:.92,roughness:.14,envMapIntensity:2.8,roughnessMap:corrRoughMap});
+  const copperMat=new THREE.MeshPhysicalMaterial({color:0x553322,metalness:.94,roughness:.1,envMapIntensity:3.0,clearcoat:.3});
   const cableMat=new THREE.MeshPhysicalMaterial({color:0x080808,metalness:.3,roughness:.8});
 
   // ──────────── FLOOR CABLE TRAYS ────────────
