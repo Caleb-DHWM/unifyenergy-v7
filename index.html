@@ -606,7 +606,7 @@ const miniContainer=buildHeroContainer(.6);
 hScene.add(miniContainer);
 // Reflective ground -- polished dark floor, tamed HDR reflection
 const gnd=new THREE.Mesh(new THREE.PlaneGeometry(20,20),
-  new THREE.MeshPhysicalMaterial({color:0x020406,metalness:.85,roughness:.22,envMapIntensity:.35,clearcoat:.15,clearcoatRoughness:.15}));
+  new THREE.MeshPhysicalMaterial({color:0x020406,metalness:.75,roughness:.35,envMapIntensity:.15,clearcoat:.08,clearcoatRoughness:.25}));
 gnd.rotation.x=-Math.PI/2;gnd.receiveShadow=true;hScene.add(gnd);
 
 // Hero post-processing: SSAO + bloom for cinematic quality
@@ -676,7 +676,7 @@ const cRim=new THREE.PointLight(0x334455,.4,15);cRim.position.set(4,2,-5);cScene
 
 // Reflective ground plane -- dark polished floor, controlled HDR reflection
 const gnd2=new THREE.Mesh(new THREE.PlaneGeometry(40,40),
-  new THREE.MeshPhysicalMaterial({color:0x020406,metalness:.85,roughness:.2,envMapIntensity:.4,clearcoat:.2,clearcoatRoughness:.15}));
+  new THREE.MeshPhysicalMaterial({color:0x020406,metalness:.75,roughness:.35,envMapIntensity:.2,clearcoat:.1,clearcoatRoughness:.25}));
 gnd2.rotation.x=-Math.PI/2;gnd2.position.y=-.01;gnd2.receiveShadow=true;cScene.add(gnd2);
 // Subtle grid lines
 const gridMat=new THREE.LineBasicMaterial({color:0x1a2a3a,transparent:true,opacity:.2});
@@ -869,20 +869,20 @@ function buildContainer(scale=1){
     beam.position.set(-W*.4+i*W*.16,-.04*s,0);g.add(beam);
   }
 
-  // Corrugated back wall -- deeper sine-wave with normal map for micro-detail
-  const backWall=new THREE.Mesh(makeCorrugatedGeo(W,H,32,.028*s,8),wallMat);
-  backWall.position.set(0,H/2,-D/2);backWall.castShadow=true;g.add(backWall);
-  // Corrugated left wall -- deeper corrugation with normal map
-  const leftWall=new THREE.Mesh(makeCorrugatedGeo(D,H,14,.028*s,8),wallMatV);
-  leftWall.position.set(-W/2,H/2,0);leftWall.rotation.y=Math.PI/2;leftWall.castShadow=true;g.add(leftWall);
-  // Right wall - partially cut away to reveal interior; rear portion is solid metal
-  const rwSolidMat=new THREE.MeshPhysicalMaterial({color:0x0a0a0a,metalness:.93,roughness:.25,envMapIntensity:2.5,map:corrDiffMap,normalMap:corrNormalMap,normalScale:new THREE.Vector2(1.0,1.0),roughnessMap:corrRoughMap,metalnessMap:corrMetalMap,aoMap:corrAOMap,aoMapIntensity:.5});
-  const rwSolid=new THREE.Mesh(makeCorrugatedGeo(D*.45,H,7,.028*s,8),rwSolidMat);
-  rwSolid.position.set(W/2,H/2,-D*.28);rwSolid.rotation.y=Math.PI/2;rwSolid.castShadow=true;g.add(rwSolid);
-  // Right wall front portion - translucent cutaway hint
-  const rwGlassMat=new THREE.MeshPhysicalMaterial({color:0x0a1020,metalness:.7,roughness:.15,transparent:true,opacity:.12,envMapIntensity:1.5,normalMap:corrNormalMap,normalScale:new THREE.Vector2(.4,.4)});
-  const rwGlass=new THREE.Mesh(makeCorrugatedGeo(D*.35,H*.7,5,.012*s,6),rwGlassMat);
-  rwGlass.position.set(W/2,H*.4,D*.22);rwGlass.rotation.y=Math.PI/2;g.add(rwGlass);
+  // Back wall -- flat plane with real PBR normal map for corrugation (no geometric ridges)
+  const backWall=new THREE.Mesh(new THREE.PlaneGeometry(W,H),wallMat);
+  backWall.position.set(0,H/2,-D/2);backWall.castShadow=true;backWall.receiveShadow=true;g.add(backWall);
+  // Left wall -- flat plane with real PBR normal map for corrugation
+  const leftWall=new THREE.Mesh(new THREE.PlaneGeometry(D,H),wallMatV);
+  leftWall.position.set(-W/2,H/2,0);leftWall.rotation.y=Math.PI/2;leftWall.castShadow=true;leftWall.receiveShadow=true;g.add(leftWall);
+  // Right wall - rear portion is solid metal with PBR textures
+  const rwSolidMat=new THREE.MeshPhysicalMaterial({color:0x0a0a0a,metalness:.93,roughness:.25,envMapIntensity:2.5,map:corrDiffMap,normalMap:corrNormalMap,normalScale:new THREE.Vector2(1.2,1.2),roughnessMap:corrRoughMap,metalnessMap:corrMetalMap,aoMap:corrAOMap,aoMapIntensity:.5});
+  const rwSolid=new THREE.Mesh(new THREE.PlaneGeometry(D*.55,H),rwSolidMat);
+  rwSolid.position.set(W/2,H/2,-D*.22);rwSolid.rotation.y=-Math.PI/2;rwSolid.castShadow=true;rwSolid.receiveShadow=true;g.add(rwSolid);
+  // Right wall front portion - translucent cutaway for seeing internals
+  const rwGlassMat=new THREE.MeshPhysicalMaterial({color:0x0a1828,metalness:.6,roughness:.12,transparent:true,opacity:.15,envMapIntensity:1.2,normalMap:corrNormalMap,normalScale:new THREE.Vector2(.5,.5)});
+  const rwGlass=new THREE.Mesh(new THREE.PlaneGeometry(D*.35,H*.8),rwGlassMat);
+  rwGlass.position.set(W/2,H*.42,D*.25);rwGlass.rotation.y=-Math.PI/2;g.add(rwGlass);
   // Roof - barely visible dark glass
   const rf=new THREE.Mesh(new THREE.BoxGeometry(W,.025*s,D),new THREE.MeshPhysicalMaterial({color:0x0a0e14,metalness:.6,roughness:.4,transparent:true,opacity:.06}));
   rf.position.y=H;g.add(rf);
