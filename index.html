@@ -644,9 +644,9 @@ const hKey=new THREE.DirectionalLight(0x8899BB,.6);hKey.position.set(3,6,4);hKey
 hKey.shadow.mapSize.set(1024,1024);hKey.shadow.bias=-.0003;hScene.add(hKey);
 const hFill=new THREE.DirectionalLight(0x223355,.08);hFill.position.set(-4,3,-2);hScene.add(hFill);
 const hRim=new THREE.PointLight(0x0066AA,.5,15);hRim.position.set(-3,2,-4);hScene.add(hRim);
-// Dramatic spot light from above for hard pool of light on container
-const hSpot=new THREE.SpotLight(0x4466AA,.8,20,Math.PI/6,.5,1.5);
-hSpot.position.set(1,6,2);hSpot.target.position.set(0,0,0);hSpot.castShadow=true;
+// Subtle overhead spot for focused highlight on container
+const hSpot=new THREE.SpotLight(0x4466AA,.4,20,Math.PI/6,.6,2);
+hSpot.position.set(1,6,2);hSpot.target.position.set(0,.3,0);hSpot.castShadow=true;
 hScene.add(hSpot);hScene.add(hSpot.target);
 // Intense blue reactor glow flooding the container interior
 const hGlow=new THREE.PointLight(0x00AAFF,5,8);hGlow.position.set(-.6,.5,0);hScene.add(hGlow);
@@ -655,9 +655,9 @@ const hGlow3b=new THREE.PointLight(0x0088FF,2.5,5);hGlow3b.position.set(-.4,.6,-
 
 const miniContainer=buildHeroContainer(.6);
 hScene.add(miniContainer);
-// Reflective ground -- polished dark floor for dramatic reflections
+// Reflective ground -- polished dark floor, tamed HDR reflection
 const gnd=new THREE.Mesh(new THREE.PlaneGeometry(20,20),
-  new THREE.MeshPhysicalMaterial({color:0x030508,metalness:.95,roughness:.15,envMapIntensity:1.2,clearcoat:.3,clearcoatRoughness:.1}));
+  new THREE.MeshPhysicalMaterial({color:0x020406,metalness:.85,roughness:.22,envMapIntensity:.35,clearcoat:.15,clearcoatRoughness:.15}));
 gnd.rotation.x=-Math.PI/2;gnd.receiveShadow=true;hScene.add(gnd);
 
 // Hero post-processing: SSAO + bloom for cinematic quality
@@ -706,12 +706,12 @@ cKey.shadow.camera.left=-6;cKey.shadow.camera.right=6;cKey.shadow.camera.top=4;c
 cScene.add(cKey);
 const cFill=new THREE.DirectionalLight(0x223344,.06);cFill.position.set(-5,4,-3);cScene.add(cFill);
 const cBack=new THREE.DirectionalLight(0x445566,.1);cBack.position.set(-2,3,-6);cScene.add(cBack);
-// Dramatic overhead spot for hard pool of light on container
-const cSpot=new THREE.SpotLight(0x5577AA,.9,25,Math.PI/5,.4,1.5);
-cSpot.position.set(0,10,3);cSpot.target.position.set(0,0,0);cSpot.castShadow=true;
+// Subtle overhead spot for focused highlight on container top
+const cSpot=new THREE.SpotLight(0x446688,.5,25,Math.PI/5,.5,2);
+cSpot.position.set(0,10,3);cSpot.target.position.set(0,.5,0);cSpot.castShadow=true;
 cSpot.shadow.mapSize.set(2048,2048);cScene.add(cSpot);cScene.add(cSpot.target);
-// Secondary spot from side for rim highlight on metal
-const cSpot2=new THREE.SpotLight(0x334466,.4,20,Math.PI/4,.6,2);
+// Secondary spot from side for rim highlight on metal edges
+const cSpot2=new THREE.SpotLight(0x334466,.25,20,Math.PI/4,.6,2);
 cSpot2.position.set(-6,5,-2);cSpot2.target.position.set(0,.5,0);
 cScene.add(cSpot2);cScene.add(cSpot2.target);
 // INTENSE blue reactor glow flooding the entire interior -- the signature visual
@@ -725,9 +725,9 @@ const cUnder=new THREE.PointLight(0x0055BB,2,6);cUnder.position.set(-1,-.2,0);cS
 // Subtle rim light
 const cRim=new THREE.PointLight(0x334455,.4,15);cRim.position.set(4,2,-5);cScene.add(cRim);
 
-// Reflective ground plane -- polished dark floor for container reflection
+// Reflective ground plane -- dark polished floor, controlled HDR reflection
 const gnd2=new THREE.Mesh(new THREE.PlaneGeometry(40,40),
-  new THREE.MeshPhysicalMaterial({color:0x030508,metalness:.92,roughness:.12,envMapIntensity:1.0,clearcoat:.4,clearcoatRoughness:.08}));
+  new THREE.MeshPhysicalMaterial({color:0x020406,metalness:.85,roughness:.2,envMapIntensity:.4,clearcoat:.2,clearcoatRoughness:.15}));
 gnd2.rotation.x=-Math.PI/2;gnd2.position.y=-.01;gnd2.receiveShadow=true;cScene.add(gnd2);
 // Subtle grid lines
 const gridMat=new THREE.LineBasicMaterial({color:0x1a2a3a,transparent:true,opacity:.2});
