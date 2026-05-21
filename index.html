@@ -859,8 +859,8 @@ function buildContainer(scale=1){
   const W=5*s,H=1.4*s,D=2*s;
   // Dark charcoal steel -- real PBR textures from Poly Haven, subtle corrugation via normal map
   const frameMat=new THREE.MeshPhysicalMaterial({color:0x141418,metalness:.95,roughness:.2,clearcoat:.25,clearcoatRoughness:.2,envMapIntensity:2.5,roughnessMap:corrRoughMap});
-  const wallMat=new THREE.MeshPhysicalMaterial({color:0x1a1a20,metalness:.92,roughness:.28,envMapIntensity:2.5,normalMap:corrNormalMap,normalScale:new THREE.Vector2(.35,.35),roughnessMap:corrRoughMap,metalnessMap:corrMetalMap,aoMap:corrAOMap,aoMapIntensity:.15});
-  const wallMatV=new THREE.MeshPhysicalMaterial({color:0x1a1a20,metalness:.92,roughness:.28,envMapIntensity:2.5,normalMap:corrNormalMap,normalScale:new THREE.Vector2(.35,.35),roughnessMap:corrRoughMap,metalnessMap:corrMetalMap,aoMap:corrAOMap,aoMapIntensity:.15});
+  const wallMat=new THREE.MeshPhysicalMaterial({color:0x1e1e24,metalness:.92,roughness:.3,envMapIntensity:2.2,normalMap:corrNormalMap,normalScale:new THREE.Vector2(.12,.12),roughnessMap:corrRoughMap});
+  const wallMatV=new THREE.MeshPhysicalMaterial({color:0x1e1e24,metalness:.92,roughness:.3,envMapIntensity:2.2,normalMap:corrNormalMap,normalScale:new THREE.Vector2(.12,.12),roughnessMap:corrRoughMap});
   const ccMat=new THREE.MeshPhysicalMaterial({color:0x080808,metalness:.97,roughness:.12,clearcoat:.5,clearcoatRoughness:.1,envMapIntensity:2.5});
   const darkVoid=new THREE.MeshPhysicalMaterial({color:0x030305,metalness:.9,roughness:.3});
 
@@ -881,11 +881,11 @@ function buildContainer(scale=1){
   const leftWall=new THREE.Mesh(new THREE.PlaneGeometry(D,H),wallMatV);
   leftWall.position.set(-W/2,H/2,0);leftWall.rotation.y=Math.PI/2;leftWall.castShadow=true;leftWall.receiveShadow=true;g.add(leftWall);
   // Right wall - rear portion is solid metal with PBR textures
-  const rwSolidMat=new THREE.MeshPhysicalMaterial({color:0x1a1a20,metalness:.92,roughness:.28,envMapIntensity:2.5,normalMap:corrNormalMap,normalScale:new THREE.Vector2(.35,.35),roughnessMap:corrRoughMap,metalnessMap:corrMetalMap,aoMap:corrAOMap,aoMapIntensity:.15});
+  const rwSolidMat=new THREE.MeshPhysicalMaterial({color:0x1e1e24,metalness:.92,roughness:.3,envMapIntensity:2.2,normalMap:corrNormalMap,normalScale:new THREE.Vector2(.12,.12),roughnessMap:corrRoughMap});
   const rwSolid=new THREE.Mesh(new THREE.PlaneGeometry(D*.55,H),rwSolidMat);
   rwSolid.position.set(W/2,H/2,-D*.22);rwSolid.rotation.y=-Math.PI/2;rwSolid.castShadow=true;rwSolid.receiveShadow=true;g.add(rwSolid);
   // Right wall front portion - translucent cutaway for seeing internals
-  const rwGlassMat=new THREE.MeshPhysicalMaterial({color:0x0a1828,metalness:.6,roughness:.12,transparent:true,opacity:.15,envMapIntensity:1.2,normalMap:corrNormalMap,normalScale:new THREE.Vector2(.5,.5)});
+  const rwGlassMat=new THREE.MeshPhysicalMaterial({color:0x0a1828,metalness:.6,roughness:.12,transparent:true,opacity:.15,envMapIntensity:1.2,normalMap:corrNormalMap,normalScale:new THREE.Vector2(.08,.08)});
   const rwGlass=new THREE.Mesh(new THREE.PlaneGeometry(D*.35,H*.8),rwGlassMat);
   rwGlass.position.set(W/2,H*.42,D*.25);rwGlass.rotation.y=-Math.PI/2;g.add(rwGlass);
   // Roof - barely visible dark glass
