@@ -483,26 +483,53 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
 import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
+import {RGBELoader} from 'three/addons/loaders/RGBELoader.js';
 
-/* ===== ENVIRONMENT MAP (procedural dark HDR sky) ===== */
+/* ===== ENVIRONMENT MAP ===== */
+/* Procedural fallback (used until real HDR loads) */
 function makeEnvMap(renderer){
   const pmrem=new THREE.PMREMGenerator(renderer);
-  pmrem.compileCubemapShader();
-  const sc=new THREE.Scene();
-  // Dark gradient sky with horizon glow
-  const c=document.createElement('canvas');c.width=512;c.height=512;
+  pmrem.compileEquirectangularShader();
+  const c=document.createElement('canvas');c.width=1024;c.height=512;
   const cx=c.getContext('2d');
+  // Richer gradient with warm horizon for better metal reflections
   const grd=cx.createLinearGradient(0,0,0,512);
-  grd.addColorStop(0,'#020810');grd.addColorStop(.35,'#0a1628');grd.addColorStop(.5,'#1a3050');grd.addColorStop(.55,'#2a4060');grd.addColorStop(.6,'#1a3050');grd.addColorStop(1,'#050a14');
-  cx.fillStyle=grd;cx.fillRect(0,0,512,512);
-  // Add subtle star-like specks for metal reflections
-  cx.fillStyle='rgba(180,200,220,.15)';
-  for(let i=0;i<60;i++){cx.beginPath();cx.arc(Math.random()*512,Math.random()*256,Math.random()*1.5+.5,0,Math.PI*2);cx.fill();}
+  grd.addColorStop(0,'#010408');grd.addColorStop(.25,'#060d1a');
+  grd.addColorStop(.42,'#0f2040');grd.addColorStop(.48,'#1a3560');
+  grd.addColorStop(.5,'#2a4a70');grd.addColorStop(.52,'#1a3560');
+  grd.addColorStop(.58,'#0f2040');grd.addColorStop(.75,'#060d1a');
+  grd.addColorStop(1,'#010408');
+  cx.fillStyle=grd;cx.fillRect(0,0,1024,512);
+  // Brighter specular highlights for initial metal reflections
+  cx.fillStyle='rgba(200,220,240,.2)';
+  for(let i=0;i<120;i++){cx.beginPath();cx.arc(Math.random()*1024,Math.random()*280+80,Math.random()*2+.5,0,Math.PI*2);cx.fill();}
+  // Warm horizon glow band
+  const hGrd=cx.createLinearGradient(0,230,0,280);
+  hGrd.addColorStop(0,'rgba(40,60,100,0)');hGrd.addColorStop(.5,'rgba(60,80,120,.15)');hGrd.addColorStop(1,'rgba(40,60,100,0)');
+  cx.fillStyle=hGrd;cx.fillRect(0,230,1024,50);
   const tex=new THREE.CanvasTexture(c);
   tex.mapping=THREE.EquirectangularReflectionMapping;
   const rt=pmrem.fromEquirectangular(tex);
   tex.dispose();pmrem.dispose();
   return rt.texture;
+}
+
+/* Load real HDR environment map from Poly Haven (CC0 license) */
+function loadRealHDR(renderers, scenes){
+  new RGBELoader().load(
+    'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/industrial_sunset_puresky_1k.hdr',
+    function(texture){
+      texture.mapping=THREE.EquirectangularReflectionMapping;
+      renderers.forEach(function(renderer,i){
+        const pmrem=new THREE.PMREMGenerator(renderer);
+        pmrem.compileEquirectangularShader();
+        const envTex=pmrem.fromEquirectangular(texture).texture;
+        scenes[i].environment=envTex;
+        pmrem.dispose();
+      });
+      texture.dispose();
+    }
+  );
 }
 
 /* ===== HERO 3D ===== */
@@ -511,7 +538,7 @@ const hR=new THREE.WebGLRenderer({canvas:hCanvas,antialias:true,alpha:false});
 hR.setPixelRatio(Math.min(devicePixelRatio,2));
 hR.setClearColor(0x080E18,1);
 hR.shadowMap.enabled=true;hR.shadowMap.type=THREE.PCFSoftShadowMap;
-hR.toneMapping=THREE.ACESFilmicToneMapping;hR.toneMappingExposure=.9;
+hR.toneMapping=THREE.ACESFilmicToneMapping;hR.toneMappingExposure=1.0;
 hR.outputColorSpace=THREE.SRGBColorSpace;
 const hScene=new THREE.Scene();
 hScene.background=new THREE.Color(0x080E18);
@@ -535,7 +562,8 @@ const hGlow3b=new THREE.PointLight(0x0088FF,2,5);hGlow3b.position.set(-.4,.6,-.2
 
 const miniContainer=buildHeroContainer(.6);
 hScene.add(miniContainer);
-const gnd=new THREE.Mesh(new THREE.PlaneGeometry(20,20),new THREE.ShadowMaterial({opacity:.2}));
+const gnd=new THREE.Mesh(new THREE.PlaneGeometry(20,20),
+  new THREE.MeshPhysicalMaterial({color:0x060a12,metalness:.3,roughness:.6,envMapIntensity:.8,transparent:true,opacity:.7}));
 gnd.rotation.x=-Math.PI/2;gnd.receiveShadow=true;hScene.add(gnd);
 
 // Hero bloom composer - stronger bloom for cinematic glow
@@ -557,7 +585,7 @@ const cR=new THREE.WebGLRenderer({canvas:cCanvas,antialias:true,alpha:false});
 cR.setPixelRatio(Math.min(devicePixelRatio,2));
 cR.setClearColor(0x080E18,1);
 cR.shadowMap.enabled=true;cR.shadowMap.type=THREE.PCFSoftShadowMap;
-cR.toneMapping=THREE.ACESFilmicToneMapping;cR.toneMappingExposure=.85;
+cR.toneMapping=THREE.ACESFilmicToneMapping;cR.toneMappingExposure=.95;
 cR.outputColorSpace=THREE.SRGBColorSpace;
 const cScene=new THREE.Scene();
 const envMap2=makeEnvMap(cR);
@@ -589,13 +617,13 @@ const cGlow5=new THREE.PointLight(0x0077EE,2,6);cGlow5.position.set(0,.6,0);cSce
 // Subtle rim light
 const cRim=new THREE.PointLight(0x334455,.3,15);cRim.position.set(4,2,-5);cScene.add(cRim);
 
-// Subtle ground plane
-const gnd2=new THREE.Mesh(new THREE.PlaneGeometry(30,30),
-  new THREE.MeshStandardMaterial({color:0x0a1420,roughness:.9,metalness:.1}));
+// Reflective ground plane -- polished concrete/epoxy floor for realistic ground reflections
+const gnd2=new THREE.Mesh(new THREE.PlaneGeometry(40,40),
+  new THREE.MeshPhysicalMaterial({color:0x080e16,metalness:.4,roughness:.55,envMapIntensity:1.2}));
 gnd2.rotation.x=-Math.PI/2;gnd2.position.y=-.01;gnd2.receiveShadow=true;cScene.add(gnd2);
 // Subtle grid lines
-const gridMat=new THREE.LineBasicMaterial({color:0x1a2a3a,transparent:true,opacity:.3});
-for(let i=-10;i<=10;i++){
+const gridMat=new THREE.LineBasicMaterial({color:0x1a2a3a,transparent:true,opacity:.2});
+for(let i=-10;i<=10;i+=2){
   const pts=[new THREE.Vector3(i,0,-10),new THREE.Vector3(i,0,10)];
   const pts2=[new THREE.Vector3(-10,0,i),new THREE.Vector3(10,0,i)];
   cScene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),gridMat));
@@ -618,6 +646,9 @@ function resizeC(){
 }
 resizeC();window.addEventListener('resize',resizeC);
 
+/* ===== LOAD REAL HDR (upgrades reflections when ready) ===== */
+loadRealHDR([hR,cR],[hScene,cScene]);
+
 /* ===== BUILD FUNCTIONS ===== */
 
 // Hero container with visible LENR reactors and key components
@@ -631,7 +662,7 @@ function buildHeroContainer(scale=1){
   const cellMat=new THREE.MeshPhysicalMaterial({color:0x0088DD,metalness:.4,roughness:.1,emissive:0x00AAFF,emissiveIntensity:5.0,clearcoat:.8});
   const coreMat=new THREE.MeshPhysicalMaterial({color:0x44DDFF,emissive:0x00EEFF,emissiveIntensity:8.0,transparent:true,opacity:.85});
   const innerMat=new THREE.MeshPhysicalMaterial({color:0xFFFFFF,emissive:0x88EEFF,emissiveIntensity:10.0,transparent:true,opacity:.6});
-  const darkMetal=new THREE.MeshPhysicalMaterial({color:0x0a0a0a,metalness:.92,roughness:.22});
+  const darkMetal=new THREE.MeshPhysicalMaterial({color:0x0a0a0a,metalness:.94,roughness:.18,envMapIntensity:2.0});
 
   // Position in left half of container (same as main scene)
   const reactorGroup=new THREE.Group();
@@ -718,42 +749,45 @@ function buildHeroContainer(scale=1){
   return g;
 }
 
+/* Sine-wave corrugated wall geometry for photorealistic metal */
+function makeCorrugatedGeo(width,height,corrCount,amplitude,segsPerCorr){
+  segsPerCorr=segsPerCorr||4;
+  const xSegs=corrCount*segsPerCorr;
+  const geo=new THREE.PlaneGeometry(width,height,xSegs,1);
+  const pos=geo.attributes.position;
+  for(let i=0;i<pos.count;i++){
+    const x=pos.getX(i);
+    pos.setZ(i,Math.sin(x/width*corrCount*Math.PI*2)*amplitude);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+
 function buildContainer(scale=1){
   const g=new THREE.Group();
   const s=scale;
   const W=5*s,H=1.4*s,D=2*s;
   // Dark charcoal steel -- photorealistic industrial look
-  const frameMat=new THREE.MeshPhysicalMaterial({color:0x111111,metalness:.92,roughness:.28,clearcoat:.15,clearcoatRoughness:.4,envMapIntensity:1.2});
-  const wallMat=new THREE.MeshPhysicalMaterial({color:0x141414,metalness:.88,roughness:.35,envMapIntensity:.9});
-  const ridgeMat=new THREE.MeshPhysicalMaterial({color:0x1a1a1a,metalness:.85,roughness:.4});
-  const ccMat=new THREE.MeshPhysicalMaterial({color:0x0a0a0a,metalness:.95,roughness:.18,clearcoat:.3});
+  const frameMat=new THREE.MeshPhysicalMaterial({color:0x111111,metalness:.94,roughness:.22,clearcoat:.2,clearcoatRoughness:.3,envMapIntensity:2.0});
+  const wallMat=new THREE.MeshPhysicalMaterial({color:0x161616,metalness:.92,roughness:.25,envMapIntensity:2.5});
+  const ccMat=new THREE.MeshPhysicalMaterial({color:0x0a0a0a,metalness:.96,roughness:.12,clearcoat:.4,envMapIntensity:2.0});
   const darkVoid=new THREE.MeshPhysicalMaterial({color:0x050508,metalness:.9,roughness:.3});
 
-  // Floor (thick steel plate)
-  const floor=new THREE.Mesh(new THREE.BoxGeometry(W,.06*s,D),frameMat);
+  // Floor (thick steel plate with subtle reflection)
+  const floorMat=new THREE.MeshPhysicalMaterial({color:0x0e0e0e,metalness:.9,roughness:.35,envMapIntensity:1.5});
+  const floor=new THREE.Mesh(new THREE.BoxGeometry(W,.06*s,D),floorMat);
   floor.receiveShadow=true;g.add(floor);
 
-  // Corrugated back wall -- dark steel panels
-  for(let i=0;i<Math.floor(W/(.08*s));i++){
-    const strip=new THREE.Mesh(new THREE.BoxGeometry(.04*s,H,.035*s),wallMat);
-    strip.position.set(-W/2+i*(.08*s)+.04*s,H/2,-D/2);g.add(strip);
-    if(i%2===0){
-      const ridge=new THREE.Mesh(new THREE.BoxGeometry(.04*s,H,.015*s),ridgeMat);
-      ridge.position.set(-W/2+i*(.08*s)+.04*s,H/2,-D/2+.025*s);g.add(ridge);
-    }
-  }
-  // Corrugated left wall
-  for(let i=0;i<Math.floor(D/(.08*s));i++){
-    const strip=new THREE.Mesh(new THREE.BoxGeometry(.035*s,H,.04*s),wallMat);
-    strip.position.set(-W/2,H/2,-D/2+i*(.08*s)+.04*s);g.add(strip);
-    if(i%2===0){
-      const ridge=new THREE.Mesh(new THREE.BoxGeometry(.015*s,H,.04*s),ridgeMat);
-      ridge.position.set(-W/2+.025*s,H/2,-D/2+i*(.08*s)+.04*s);g.add(ridge);
-    }
-  }
-  // Right wall - partial transparent cutaway (ghosted dark)
-  const rw=new THREE.Mesh(new THREE.BoxGeometry(.03*s,H,D*.35),new THREE.MeshPhysicalMaterial({color:0x0e1218,metalness:.85,roughness:.35,transparent:true,opacity:.12}));
-  rw.position.set(W/2,H/2,-D*.32);g.add(rw);
+  // Corrugated back wall -- sine-wave displaced geometry for realistic metal
+  const backWall=new THREE.Mesh(makeCorrugatedGeo(W,H,32,.018*s,6),wallMat);
+  backWall.position.set(0,H/2,-D/2);g.add(backWall);
+  // Corrugated left wall -- sine-wave displaced geometry
+  const leftWall=new THREE.Mesh(makeCorrugatedGeo(D,H,14,.018*s,6),wallMat);
+  leftWall.position.set(-W/2,H/2,0);leftWall.rotation.y=Math.PI/2;g.add(leftWall);
+  // Right wall - partial transparent cutaway with corrugation
+  const rwMat=new THREE.MeshPhysicalMaterial({color:0x0e1218,metalness:.88,roughness:.28,transparent:true,opacity:.12,envMapIntensity:1.5});
+  const rw=new THREE.Mesh(makeCorrugatedGeo(D*.35,H,5,.012*s,4),rwMat);
+  rw.position.set(W/2,H/2,-D*.32);rw.rotation.y=Math.PI/2;g.add(rw);
   // Roof - barely visible dark glass
   const rf=new THREE.Mesh(new THREE.BoxGeometry(W,.025*s,D),new THREE.MeshPhysicalMaterial({color:0x0a0e14,metalness:.6,roughness:.4,transparent:true,opacity:.08}));
   rf.position.y=H;g.add(rf);
@@ -812,10 +846,10 @@ function buildContainerDetailed(){
   const interactive=[];
   const W=5,H=1.4,D=2;
 
-  // Shared materials -- dark industrial palette
-  const frameMat=new THREE.MeshPhysicalMaterial({color:0x111111,metalness:.92,roughness:.28,envMapIntensity:1.2});
-  const pipeMat=new THREE.MeshPhysicalMaterial({color:0x1a1a1a,metalness:.88,roughness:.22,envMapIntensity:1.0});
-  const copperMat=new THREE.MeshPhysicalMaterial({color:0x553322,metalness:.9,roughness:.2,envMapIntensity:.8});
+  // Shared materials -- dark industrial palette with HDR-ready envMap intensities
+  const frameMat=new THREE.MeshPhysicalMaterial({color:0x111111,metalness:.94,roughness:.22,clearcoat:.15,envMapIntensity:2.5});
+  const pipeMat=new THREE.MeshPhysicalMaterial({color:0x1a1a1a,metalness:.9,roughness:.18,envMapIntensity:2.0});
+  const copperMat=new THREE.MeshPhysicalMaterial({color:0x553322,metalness:.92,roughness:.15,envMapIntensity:2.0});
   const cableMat=new THREE.MeshPhysicalMaterial({color:0x0a0a0a,metalness:.3,roughness:.8});
 
   // ──────────── FLOOR CABLE TRAYS ────────────
@@ -899,7 +933,7 @@ function buildContainerDetailed(){
       const cellMat=new THREE.MeshPhysicalMaterial({color:0x0088DD,metalness:.4,roughness:.1,emissive:0x00AAFF,emissiveIntensity:4.0,clearcoat:.8,clearcoatRoughness:.05});
       const cellCoreMat=new THREE.MeshPhysicalMaterial({color:0x44DDFF,metalness:.2,roughness:.05,emissive:0x00EEFF,emissiveIntensity:6.0,transparent:true,opacity:.95});
       const cellInnerMat=new THREE.MeshPhysicalMaterial({color:0xFFFFFF,emissive:0x66DDFF,emissiveIntensity:8.0,transparent:true,opacity:.7});
-      const housingMat=new THREE.MeshPhysicalMaterial({color:0x0c0c0c,metalness:.92,roughness:.25,envMapIntensity:1.0});
+      const housingMat=new THREE.MeshPhysicalMaterial({color:0x0c0c0c,metalness:.94,roughness:.2,envMapIntensity:2.5});
       // Dark containment housing (barely visible shell)
       const housing=new THREE.Mesh(new THREE.BoxGeometry(1.1,.95,1.4),new THREE.MeshPhysicalMaterial({color:0x080c12,metalness:.85,roughness:.3,transparent:true,opacity:.06}));
       housing.position.y=-.02;mesh.add(housing);
@@ -968,7 +1002,7 @@ function buildContainerDetailed(){
     } else if(c.geo==='switching'){
       // ── JULLIAN PERRY SWITCHING: Dark industrial cabinet ──
       mesh=new THREE.Group();
-      const cabinetMat=new THREE.MeshPhysicalMaterial({color:0x111115,metalness:.9,roughness:.3,envMapIntensity:.8});
+      const cabinetMat=new THREE.MeshPhysicalMaterial({color:0x111115,metalness:.92,roughness:.22,envMapIntensity:2.0});
       const cabinet=new THREE.Mesh(new THREE.BoxGeometry(.7,.72,.85),cabinetMat);
       mesh.add(cabinet);
       const cabEdges=new THREE.LineSegments(new THREE.EdgesGeometry(cabinet.geometry),new THREE.LineBasicMaterial({color:0x1a2535,transparent:true,opacity:.3}));
@@ -1001,7 +1035,7 @@ function buildContainerDetailed(){
     } else if(c.geo==='battery'){
       // ── GRAPHENE BATTERY BANK: Dark cells with subtle blue indicators ──
       mesh=new THREE.Group();
-      const cellMat=new THREE.MeshPhysicalMaterial({color:0x121212,metalness:.85,roughness:.3,emissive:0x050a10,emissiveIntensity:.1,envMapIntensity:.8});
+      const cellMat=new THREE.MeshPhysicalMaterial({color:0x121212,metalness:.88,roughness:.25,emissive:0x050a10,emissiveIntensity:.1,envMapIntensity:2.0});
       // 6 battery modules in 2 rows of 3
       for(let row=0;row<2;row++){
         for(let mod=0;mod<3;mod++){
@@ -1035,7 +1069,7 @@ function buildContainerDetailed(){
     } else if(c.geo==='thermal'){
       // ── THERMAL MANAGEMENT: Dark industrial heat exchanger ──
       mesh=new THREE.Group();
-      const exchMat=new THREE.MeshPhysicalMaterial({color:0x141618,metalness:.88,roughness:.25,emissive:0x051218,emissiveIntensity:.08,envMapIntensity:.9});
+      const exchMat=new THREE.MeshPhysicalMaterial({color:0x141618,metalness:.9,roughness:.2,emissive:0x051218,emissiveIntensity:.08,envMapIntensity:2.0});
       const exchanger=new THREE.Mesh(new THREE.BoxGeometry(.45,.35,1),exchMat);
       mesh.add(exchanger);
       const exEdge=new THREE.LineSegments(new THREE.EdgesGeometry(exchanger.geometry),new THREE.LineBasicMaterial({color:0x152535,transparent:true,opacity:.2}));
@@ -1081,7 +1115,7 @@ function buildContainerDetailed(){
     } else if(c.geo==='controller'){
       // ── AI SMART GRID CONTROLLER: Dark cabinet, glowing blue screen ──
       mesh=new THREE.Group();
-      const cabMat=new THREE.MeshPhysicalMaterial({color:0x0e0e12,metalness:.9,roughness:.28,envMapIntensity:.8});
+      const cabMat=new THREE.MeshPhysicalMaterial({color:0x0e0e12,metalness:.92,roughness:.2,envMapIntensity:2.0});
       const cab=new THREE.Mesh(new THREE.BoxGeometry(.45,.65,.5),cabMat);
       mesh.add(cab);
       const cabEdge=new THREE.LineSegments(new THREE.EdgesGeometry(cab.geometry),new THREE.LineBasicMaterial({color:0x152030,transparent:true,opacity:.2}));
@@ -1116,7 +1150,7 @@ function buildContainerDetailed(){
     } else if(c.geo==='h2system'){
       // ── HYDROGEN / WATER MANAGEMENT: Dark pressure vessel ──
       mesh=new THREE.Group();
-      const vesselMat=new THREE.MeshPhysicalMaterial({color:0x141820,metalness:.88,roughness:.22,emissive:0x051015,emissiveIntensity:.1,envMapIntensity:.9});
+      const vesselMat=new THREE.MeshPhysicalMaterial({color:0x141820,metalness:.9,roughness:.18,emissive:0x051015,emissiveIntensity:.1,envMapIntensity:2.0});
       const vessel=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.5,16),vesselMat);
       vessel.rotation.z=Math.PI/2;mesh.add(vessel);
       [-1,1].forEach(side=>{
