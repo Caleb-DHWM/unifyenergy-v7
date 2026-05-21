@@ -507,8 +507,9 @@ function makeEnvMap(renderer){
 
 /* ===== HERO 3D ===== */
 const hCanvas=document.getElementById('hero-3d');
-const hR=new THREE.WebGLRenderer({canvas:hCanvas,antialias:true,alpha:true});
+const hR=new THREE.WebGLRenderer({canvas:hCanvas,antialias:true,alpha:false});
 hR.setPixelRatio(Math.min(devicePixelRatio,2));
+hR.setClearColor(0x080E18,1);
 hR.shadowMap.enabled=true;hR.shadowMap.type=THREE.PCFSoftShadowMap;
 hR.toneMapping=THREE.ACESFilmicToneMapping;hR.toneMappingExposure=1.2;
 hR.outputColorSpace=THREE.SRGBColorSpace;
@@ -550,8 +551,9 @@ resizeHero();window.addEventListener('resize',resizeHero);
 
 /* ===== MAIN CONTAINER 3D ===== */
 const cCanvas=document.getElementById('container-3d');
-const cR=new THREE.WebGLRenderer({canvas:cCanvas,antialias:true,alpha:true});
+const cR=new THREE.WebGLRenderer({canvas:cCanvas,antialias:true,alpha:false});
 cR.setPixelRatio(Math.min(devicePixelRatio,2));
+cR.setClearColor(0x080E18,1);
 cR.shadowMap.enabled=true;cR.shadowMap.type=THREE.PCFSoftShadowMap;
 cR.toneMapping=THREE.ACESFilmicToneMapping;cR.toneMappingExposure=1.1;
 cR.outputColorSpace=THREE.SRGBColorSpace;
