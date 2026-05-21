@@ -484,6 +484,9 @@ import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
 import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {RGBELoader} from 'three/addons/loaders/RGBELoader.js';
+import {SSAOPass} from 'three/addons/postprocessing/SSAOPass.js';
+import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
+import {GammaCorrectionShader} from 'three/addons/shaders/GammaCorrectionShader.js';
 
 /* ===== ENVIRONMENT MAP ===== */
 /* Procedural fallback (used until real HDR loads) */
@@ -532,6 +535,91 @@ function loadRealHDR(renderers, scenes){
   );
 }
 
+/* ===== PROCEDURAL TEXTURE MAPS FOR PHOTOREALISTIC METAL ===== */
+/* Generates a normal map encoding corrugated steel surface normals + micro-scratches */
+function makeCorrugatedNormalMap(w,h,corrCount,orientation){
+  orientation=orientation||'horizontal';
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const cx=c.getContext('2d');
+  // Base normal: pointing straight out (128,128,255)
+  cx.fillStyle='rgb(128,128,255)';cx.fillRect(0,0,w,h);
+  const imgData=cx.getImageData(0,0,w,h);
+  const d=imgData.data;
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const idx=(y*w+x)*4;
+      // Corrugation normals -- oscillating surface slope
+      let u=orientation==='horizontal'?x/w:y/h;
+      const slope=Math.cos(u*corrCount*Math.PI*2);
+      // Normal map encodes slope as deviation from 128
+      if(orientation==='horizontal'){
+        d[idx]=Math.floor(128+slope*60); // R = X normal
+        d[idx+1]=128; // G = Y normal (flat)
+      } else {
+        d[idx]=128;
+        d[idx+1]=Math.floor(128+slope*60);
+      }
+      // Micro-scratches -- tiny random normal perturbations
+      const scratch=(Math.random()-.5)*12;
+      d[idx]+=scratch;
+      d[idx+1]+=(Math.random()-.5)*8;
+      // Occasional horizontal scratch lines
+      if(Math.random()<.003){
+        const scrLen=Math.floor(Math.random()*40)+10;
+        for(let sx=0;sx<scrLen&&x+sx<w;sx++){
+          const si=idx+sx*4;
+          if(si+2<d.length){d[si]=Math.floor(128+(Math.random()-.5)*30);d[si+1]=Math.floor(128+25);}
+        }
+      }
+      d[idx+2]=255; // B = Z (always pointing mostly outward)
+      d[idx+3]=255;
+    }
+  }
+  cx.putImageData(imgData,0,0);
+  const tex=new THREE.CanvasTexture(c);
+  tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
+  return tex;
+}
+
+/* Generates a roughness map with subtle weathering and wear patterns */
+function makeMetalRoughnessMap(w,h){
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const cx=c.getContext('2d');
+  // Base roughness (medium gray = moderate roughness)
+  cx.fillStyle='rgb(70,70,70)';cx.fillRect(0,0,w,h);
+  // Random noise for surface imperfections
+  const imgData=cx.getImageData(0,0,w,h);
+  const d=imgData.data;
+  for(let i=0;i<d.length;i+=4){
+    const noise=Math.floor(Math.random()*40-20);
+    const v=Math.max(30,Math.min(120,70+noise));
+    d[i]=v;d[i+1]=v;d[i+2]=v;d[i+3]=255;
+  }
+  // Wear streaks (slightly smoother/shinier patches)
+  for(let s=0;s<8;s++){
+    const sy=Math.floor(Math.random()*h);
+    const sx=Math.floor(Math.random()*w);
+    const sw=Math.floor(Math.random()*w*.3)+20;
+    const sh=Math.floor(Math.random()*6)+2;
+    for(let y=sy;y<sy+sh&&y<h;y++){
+      for(let x=sx;x<sx+sw&&x<w;x++){
+        const idx=(y*w+x)*4;
+        const v=Math.max(20,d[idx]-25);
+        d[idx]=v;d[idx+1]=v;d[idx+2]=v;
+      }
+    }
+  }
+  cx.putImageData(imgData,0,0);
+  const tex=new THREE.CanvasTexture(c);
+  tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
+  return tex;
+}
+
+/* Create all texture maps once and reuse */
+const wallNormalH=makeCorrugatedNormalMap(1024,512,32,'horizontal');
+const wallNormalV=makeCorrugatedNormalMap(512,512,14,'horizontal');
+const metalRoughMap=makeMetalRoughnessMap(512,512);
+
 /* ===== HERO 3D ===== */
 const hCanvas=document.getElementById('hero-3d');
 const hR=new THREE.WebGLRenderer({canvas:hCanvas,antialias:true,alpha:false});
@@ -550,32 +638,42 @@ hCam.position.set(5.5,3,6.5);hCam.lookAt(0,.5,0);
 const hCtrl=new OrbitControls(hCam,hCanvas);
 hCtrl.enableDamping=true;hCtrl.autoRotate=true;hCtrl.autoRotateSpeed=.8;hCtrl.enableZoom=false;hCtrl.target.set(0,.5,0);
 
-// Cinematic lighting - dark moody with intense blue reactor glow
-hScene.add(new THREE.AmbientLight(0x1a2233,.2));
-const hKey=new THREE.DirectionalLight(0x8899BB,.5);hKey.position.set(3,5,4);hKey.castShadow=true;hScene.add(hKey);
-const hFill=new THREE.DirectionalLight(0x223355,.15);hFill.position.set(-4,3,-2);hScene.add(hFill);
-const hRim=new THREE.PointLight(0x0066AA,.4,15);hRim.position.set(-3,2,-4);hScene.add(hRim);
+// Cinematic lighting -- extremely dark ambient with hard key for dramatic contrast
+hScene.add(new THREE.AmbientLight(0x0a1118,.08));
+const hKey=new THREE.DirectionalLight(0x8899BB,.6);hKey.position.set(3,6,4);hKey.castShadow=true;
+hKey.shadow.mapSize.set(1024,1024);hKey.shadow.bias=-.0003;hScene.add(hKey);
+const hFill=new THREE.DirectionalLight(0x223355,.08);hFill.position.set(-4,3,-2);hScene.add(hFill);
+const hRim=new THREE.PointLight(0x0066AA,.5,15);hRim.position.set(-3,2,-4);hScene.add(hRim);
+// Dramatic spot light from above for hard pool of light on container
+const hSpot=new THREE.SpotLight(0x4466AA,.8,20,Math.PI/6,.5,1.5);
+hSpot.position.set(1,6,2);hSpot.target.position.set(0,0,0);hSpot.castShadow=true;
+hScene.add(hSpot);hScene.add(hSpot.target);
 // Intense blue reactor glow flooding the container interior
-const hGlow=new THREE.PointLight(0x00AAFF,4,8);hGlow.position.set(-.6,.5,0);hScene.add(hGlow);
-const hGlow2b=new THREE.PointLight(0x0066DD,3,6);hGlow2b.position.set(-.8,.3,.3);hScene.add(hGlow2b);
-const hGlow3b=new THREE.PointLight(0x0088FF,2,5);hGlow3b.position.set(-.4,.6,-.2);hScene.add(hGlow3b);
+const hGlow=new THREE.PointLight(0x00AAFF,5,8);hGlow.position.set(-.6,.5,0);hScene.add(hGlow);
+const hGlow2b=new THREE.PointLight(0x0066DD,3.5,6);hGlow2b.position.set(-.8,.3,.3);hScene.add(hGlow2b);
+const hGlow3b=new THREE.PointLight(0x0088FF,2.5,5);hGlow3b.position.set(-.4,.6,-.2);hScene.add(hGlow3b);
 
 const miniContainer=buildHeroContainer(.6);
 hScene.add(miniContainer);
+// Reflective ground -- polished dark floor for dramatic reflections
 const gnd=new THREE.Mesh(new THREE.PlaneGeometry(20,20),
-  new THREE.MeshPhysicalMaterial({color:0x060a12,metalness:.3,roughness:.6,envMapIntensity:.8,transparent:true,opacity:.7}));
+  new THREE.MeshPhysicalMaterial({color:0x030508,metalness:.95,roughness:.15,envMapIntensity:1.2,clearcoat:.3,clearcoatRoughness:.1}));
 gnd.rotation.x=-Math.PI/2;gnd.receiveShadow=true;hScene.add(gnd);
 
-// Hero bloom composer - stronger bloom for cinematic glow
+// Hero post-processing: SSAO + bloom for cinematic quality
 const hComposer=new EffectComposer(hR);
 hComposer.addPass(new RenderPass(hScene,hCam));
-const hBloom=new UnrealBloomPass(new THREE.Vector2(hCanvas.clientWidth,hCanvas.clientHeight),1.8,.25,.4);
+const hSSAO=new SSAOPass(hScene,hCam,hCanvas.clientWidth,hCanvas.clientHeight);
+hSSAO.kernelRadius=.6;hSSAO.minDistance=.001;hSSAO.maxDistance=.1;
+hSSAO.output=SSAOPass.OUTPUT.Default;
+hComposer.addPass(hSSAO);
+const hBloom=new UnrealBloomPass(new THREE.Vector2(hCanvas.clientWidth,hCanvas.clientHeight),2.0,.2,.35);
 hComposer.addPass(hBloom);
 
 function resizeHero(){
   const w=hCanvas.clientWidth,h=hCanvas.clientHeight;
   hCam.aspect=w/h;hCam.updateProjectionMatrix();hR.setSize(w,h);
-  hComposer.setSize(w,h);
+  hComposer.setSize(w,h);hSSAO.setSize(w,h);
 }
 resizeHero();window.addEventListener('resize',resizeHero);
 
@@ -585,7 +683,7 @@ const cR=new THREE.WebGLRenderer({canvas:cCanvas,antialias:true,alpha:false});
 cR.setPixelRatio(Math.min(devicePixelRatio,2));
 cR.setClearColor(0x080E18,1);
 cR.shadowMap.enabled=true;cR.shadowMap.type=THREE.PCFSoftShadowMap;
-cR.toneMapping=THREE.ACESFilmicToneMapping;cR.toneMappingExposure=.95;
+cR.toneMapping=THREE.ACESFilmicToneMapping;cR.toneMappingExposure=1.05;
 cR.outputColorSpace=THREE.SRGBColorSpace;
 const cScene=new THREE.Scene();
 const envMap2=makeEnvMap(cR);
@@ -600,26 +698,36 @@ const cCtrl=new OrbitControls(cCam,cCanvas);
 cCtrl.enableDamping=true;cCtrl.dampingFactor=.06;cCtrl.target.set(0,.7,0);
 cCtrl.minDistance=4;cCtrl.maxDistance=18;
 
-// Cinematic 3-point lighting - darker key, intense blue reactor flood
-cScene.add(new THREE.AmbientLight(0x0a1220,.15));
-const cKey=new THREE.DirectionalLight(0x6688AA,.4);cKey.position.set(5,8,4);cKey.castShadow=true;
-cKey.shadow.mapSize.set(2048,2048);cKey.shadow.bias=-.0005;
+// Cinematic lighting -- near-black ambient with hard directional for dramatic contrast
+cScene.add(new THREE.AmbientLight(0x060a14,.06));
+const cKey=new THREE.DirectionalLight(0x7799BB,.5);cKey.position.set(5,8,4);cKey.castShadow=true;
+cKey.shadow.mapSize.set(2048,2048);cKey.shadow.bias=-.0003;
 cKey.shadow.camera.left=-6;cKey.shadow.camera.right=6;cKey.shadow.camera.top=4;cKey.shadow.camera.bottom=-2;
 cScene.add(cKey);
-const cFill=new THREE.DirectionalLight(0x223344,.1);cFill.position.set(-5,4,-3);cScene.add(cFill);
-const cBack=new THREE.DirectionalLight(0x445566,.15);cBack.position.set(-2,3,-6);cScene.add(cBack);
+const cFill=new THREE.DirectionalLight(0x223344,.06);cFill.position.set(-5,4,-3);cScene.add(cFill);
+const cBack=new THREE.DirectionalLight(0x445566,.1);cBack.position.set(-2,3,-6);cScene.add(cBack);
+// Dramatic overhead spot for hard pool of light on container
+const cSpot=new THREE.SpotLight(0x5577AA,.9,25,Math.PI/5,.4,1.5);
+cSpot.position.set(0,10,3);cSpot.target.position.set(0,0,0);cSpot.castShadow=true;
+cSpot.shadow.mapSize.set(2048,2048);cScene.add(cSpot);cScene.add(cSpot.target);
+// Secondary spot from side for rim highlight on metal
+const cSpot2=new THREE.SpotLight(0x334466,.4,20,Math.PI/4,.6,2);
+cSpot2.position.set(-6,5,-2);cSpot2.target.position.set(0,.5,0);
+cScene.add(cSpot2);cScene.add(cSpot2.target);
 // INTENSE blue reactor glow flooding the entire interior -- the signature visual
-const cGlow1=new THREE.PointLight(0x00AAFF,6,12);cGlow1.position.set(-1.5,.7,0);cScene.add(cGlow1);
-const cGlow2=new THREE.PointLight(0x0066DD,4,10);cGlow2.position.set(-.5,.5,.3);cScene.add(cGlow2);
-const cGlow3=new THREE.PointLight(0x0088FF,5,10);cGlow3.position.set(-1.2,.4,-.4);cScene.add(cGlow3);
-const cGlow4=new THREE.PointLight(0x0055CC,3,8);cGlow4.position.set(-1,.9,.5);cScene.add(cGlow4);
-const cGlow5=new THREE.PointLight(0x0077EE,2,6);cGlow5.position.set(0,.6,0);cScene.add(cGlow5);
+const cGlow1=new THREE.PointLight(0x00AAFF,7,14);cGlow1.position.set(-1.5,.7,0);cScene.add(cGlow1);
+const cGlow2=new THREE.PointLight(0x0066DD,5,12);cGlow2.position.set(-.5,.5,.3);cScene.add(cGlow2);
+const cGlow3=new THREE.PointLight(0x0088FF,6,12);cGlow3.position.set(-1.2,.4,-.4);cScene.add(cGlow3);
+const cGlow4=new THREE.PointLight(0x0055CC,4,10);cGlow4.position.set(-1,.9,.5);cScene.add(cGlow4);
+const cGlow5=new THREE.PointLight(0x0077EE,3,8);cGlow5.position.set(0,.6,0);cScene.add(cGlow5);
+// Blue uplight from underneath container for dramatic floor spill
+const cUnder=new THREE.PointLight(0x0055BB,2,6);cUnder.position.set(-1,-.2,0);cScene.add(cUnder);
 // Subtle rim light
-const cRim=new THREE.PointLight(0x334455,.3,15);cRim.position.set(4,2,-5);cScene.add(cRim);
+const cRim=new THREE.PointLight(0x334455,.4,15);cRim.position.set(4,2,-5);cScene.add(cRim);
 
-// Dark ground plane -- matte concrete, catches blue reactor spill only
+// Reflective ground plane -- polished dark floor for container reflection
 const gnd2=new THREE.Mesh(new THREE.PlaneGeometry(40,40),
-  new THREE.MeshStandardMaterial({color:0x050810,metalness:.05,roughness:.95,envMapIntensity:.15}));
+  new THREE.MeshPhysicalMaterial({color:0x030508,metalness:.92,roughness:.12,envMapIntensity:1.0,clearcoat:.4,clearcoatRoughness:.08}));
 gnd2.rotation.x=-Math.PI/2;gnd2.position.y=-.01;gnd2.receiveShadow=true;cScene.add(gnd2);
 // Subtle grid lines
 const gridMat=new THREE.LineBasicMaterial({color:0x1a2a3a,transparent:true,opacity:.2});
@@ -633,16 +741,39 @@ for(let i=-10;i<=10;i+=2){
 const {group:mainContainer,interactive}=buildContainerDetailed();
 cScene.add(mainContainer);
 
-// Bloom post-processing - strong bloom for cinematic blue glow bleed
+// Post-processing stack: SSAO for ambient shadows + bloom for cinematic glow
 const cComposer=new EffectComposer(cR);
 cComposer.addPass(new RenderPass(cScene,cCam));
-const cBloom=new UnrealBloomPass(new THREE.Vector2(cCanvas.clientWidth,cCanvas.clientHeight),1.6,.2,.35);
+// SSAO -- adds realistic ambient occlusion shadows in corners and crevices
+const cSSAO=new SSAOPass(cScene,cCam,cCanvas.clientWidth,cCanvas.clientHeight);
+cSSAO.kernelRadius=.8;cSSAO.minDistance=.001;cSSAO.maxDistance=.12;
+cSSAO.output=SSAOPass.OUTPUT.Default;
+cComposer.addPass(cSSAO);
+// Bloom -- strong for cinematic blue glow bleed
+const cBloom=new UnrealBloomPass(new THREE.Vector2(cCanvas.clientWidth,cCanvas.clientHeight),1.8,.15,.3);
 cComposer.addPass(cBloom);
+
+// Atmospheric dust particles floating in blue reactor light
+const particleCount=200;
+const particleGeo=new THREE.BufferGeometry();
+const pPositions=new Float32Array(particleCount*3);
+const pSizes=new Float32Array(particleCount);
+for(let i=0;i<particleCount;i++){
+  pPositions[i*3]=(Math.random()-0.5)*6;
+  pPositions[i*3+1]=Math.random()*1.5+.1;
+  pPositions[i*3+2]=(Math.random()-0.5)*3;
+  pSizes[i]=Math.random()*.015+.005;
+}
+particleGeo.setAttribute('position',new THREE.BufferAttribute(pPositions,3));
+particleGeo.setAttribute('size',new THREE.BufferAttribute(pSizes,1));
+const particleMat=new THREE.PointsMaterial({color:0x4488CC,size:.02,transparent:true,opacity:.3,blending:THREE.AdditiveBlending,depthWrite:false});
+const particles=new THREE.Points(particleGeo,particleMat);
+cScene.add(particles);
 
 function resizeC(){
   const w=cCanvas.clientWidth,h=cCanvas.clientHeight;
   cCam.aspect=w/h;cCam.updateProjectionMatrix();cR.setSize(w,h);
-  cComposer.setSize(w,h);
+  cComposer.setSize(w,h);cSSAO.setSize(w,h);
 }
 resizeC();window.addEventListener('resize',resizeC);
 
@@ -749,15 +880,20 @@ function buildHeroContainer(scale=1){
   return g;
 }
 
-/* Sine-wave corrugated wall geometry for photorealistic metal */
+/* Sine-wave corrugated wall geometry with height segments for better shading */
 function makeCorrugatedGeo(width,height,corrCount,amplitude,segsPerCorr){
-  segsPerCorr=segsPerCorr||4;
+  segsPerCorr=segsPerCorr||6;
   const xSegs=corrCount*segsPerCorr;
-  const geo=new THREE.PlaneGeometry(width,height,xSegs,1);
+  const ySegs=Math.max(4,Math.floor(height/.1)); // height segments for smoother shading
+  const geo=new THREE.PlaneGeometry(width,height,xSegs,ySegs);
   const pos=geo.attributes.position;
   for(let i=0;i<pos.count;i++){
     const x=pos.getX(i);
-    pos.setZ(i,Math.sin(x/width*corrCount*Math.PI*2)*amplitude);
+    // Trapezoidal corrugation profile (more realistic than pure sine)
+    const phase=(x/width*corrCount*Math.PI*2);
+    const sinVal=Math.sin(phase);
+    const trap=Math.sign(sinVal)*Math.pow(Math.abs(sinVal),.7); // flatter peaks/valleys
+    pos.setZ(i,trap*amplitude);
   }
   geo.computeVertexNormals();
   return geo;
@@ -767,26 +903,32 @@ function buildContainer(scale=1){
   const g=new THREE.Group();
   const s=scale;
   const W=5*s,H=1.4*s,D=2*s;
-  // Dark charcoal steel -- photorealistic industrial look
-  const frameMat=new THREE.MeshPhysicalMaterial({color:0x111111,metalness:.94,roughness:.25,clearcoat:.2,clearcoatRoughness:.3,envMapIntensity:1.5});
-  const wallMat=new THREE.MeshPhysicalMaterial({color:0x141414,metalness:.92,roughness:.28,envMapIntensity:1.8});
-  const ccMat=new THREE.MeshPhysicalMaterial({color:0x0a0a0a,metalness:.96,roughness:.15,clearcoat:.4,envMapIntensity:1.5});
-  const darkVoid=new THREE.MeshPhysicalMaterial({color:0x050508,metalness:.9,roughness:.3});
+  // Dark charcoal steel -- photorealistic with normal maps for surface detail
+  const frameMat=new THREE.MeshPhysicalMaterial({color:0x0e0e0e,metalness:.95,roughness:.2,clearcoat:.25,clearcoatRoughness:.2,envMapIntensity:2.0,roughnessMap:metalRoughMap});
+  const wallMat=new THREE.MeshPhysicalMaterial({color:0x121212,metalness:.93,roughness:.22,envMapIntensity:2.2,normalMap:wallNormalH,normalScale:new THREE.Vector2(.6,.6),roughnessMap:metalRoughMap});
+  const wallMatV=new THREE.MeshPhysicalMaterial({color:0x121212,metalness:.93,roughness:.22,envMapIntensity:2.2,normalMap:wallNormalV,normalScale:new THREE.Vector2(.6,.6),roughnessMap:metalRoughMap});
+  const ccMat=new THREE.MeshPhysicalMaterial({color:0x080808,metalness:.97,roughness:.12,clearcoat:.5,clearcoatRoughness:.1,envMapIntensity:2.0});
+  const darkVoid=new THREE.MeshPhysicalMaterial({color:0x030305,metalness:.9,roughness:.3});
 
-  // Floor (thick steel plate - dark with subtle HDR reflection)
-  const floorMat=new THREE.MeshPhysicalMaterial({color:0x080808,metalness:.7,roughness:.55,envMapIntensity:.8});
+  // Floor -- diamond plate steel with subtle reflection
+  const floorMat=new THREE.MeshPhysicalMaterial({color:0x060606,metalness:.8,roughness:.45,envMapIntensity:1.0,roughnessMap:metalRoughMap});
   const floor=new THREE.Mesh(new THREE.BoxGeometry(W,.06*s,D),floorMat);
-  floor.receiveShadow=true;g.add(floor);
+  floor.receiveShadow=true;floor.castShadow=true;g.add(floor);
+  // Floor cross-members (structural steel beams underneath)
+  for(let i=0;i<6;i++){
+    const beam=new THREE.Mesh(new THREE.BoxGeometry(.04*s,.08*s,D*.95),frameMat);
+    beam.position.set(-W*.4+i*W*.16,-.04*s,0);g.add(beam);
+  }
 
-  // Corrugated back wall -- sine-wave displaced geometry for realistic metal
-  const backWall=new THREE.Mesh(makeCorrugatedGeo(W,H,32,.018*s,6),wallMat);
-  backWall.position.set(0,H/2,-D/2);g.add(backWall);
-  // Corrugated left wall -- sine-wave displaced geometry
-  const leftWall=new THREE.Mesh(makeCorrugatedGeo(D,H,14,.018*s,6),wallMat);
-  leftWall.position.set(-W/2,H/2,0);leftWall.rotation.y=Math.PI/2;g.add(leftWall);
+  // Corrugated back wall -- deeper sine-wave with normal map for micro-detail
+  const backWall=new THREE.Mesh(makeCorrugatedGeo(W,H,32,.028*s,8),wallMat);
+  backWall.position.set(0,H/2,-D/2);backWall.castShadow=true;g.add(backWall);
+  // Corrugated left wall -- deeper corrugation with normal map
+  const leftWall=new THREE.Mesh(makeCorrugatedGeo(D,H,14,.028*s,8),wallMatV);
+  leftWall.position.set(-W/2,H/2,0);leftWall.rotation.y=Math.PI/2;leftWall.castShadow=true;g.add(leftWall);
   // Right wall - partial transparent cutaway with corrugation
-  const rwMat=new THREE.MeshPhysicalMaterial({color:0x0e1218,metalness:.88,roughness:.28,transparent:true,opacity:.12,envMapIntensity:1.5});
-  const rw=new THREE.Mesh(makeCorrugatedGeo(D*.35,H,5,.012*s,4),rwMat);
+  const rwMat=new THREE.MeshPhysicalMaterial({color:0x0a0e14,metalness:.9,roughness:.22,transparent:true,opacity:.1,envMapIntensity:1.8,normalMap:wallNormalV,normalScale:new THREE.Vector2(.3,.3)});
+  const rw=new THREE.Mesh(makeCorrugatedGeo(D*.35,H,5,.018*s,6),rwMat);
   rw.position.set(W/2,H/2,-D*.32);rw.rotation.y=Math.PI/2;g.add(rw);
   // Roof - barely visible dark glass
   const rf=new THREE.Mesh(new THREE.BoxGeometry(W,.025*s,D),new THREE.MeshPhysicalMaterial({color:0x0a0e14,metalness:.6,roughness:.4,transparent:true,opacity:.08}));
@@ -846,11 +988,11 @@ function buildContainerDetailed(){
   const interactive=[];
   const W=5,H=1.4,D=2;
 
-  // Shared materials -- dark industrial palette with HDR-ready envMap intensities
-  const frameMat=new THREE.MeshPhysicalMaterial({color:0x111111,metalness:.94,roughness:.22,clearcoat:.15,envMapIntensity:2.5});
-  const pipeMat=new THREE.MeshPhysicalMaterial({color:0x1a1a1a,metalness:.9,roughness:.18,envMapIntensity:2.0});
-  const copperMat=new THREE.MeshPhysicalMaterial({color:0x553322,metalness:.92,roughness:.15,envMapIntensity:2.0});
-  const cableMat=new THREE.MeshPhysicalMaterial({color:0x0a0a0a,metalness:.3,roughness:.8});
+  // Shared materials -- dark industrial with normal/roughness maps for realism
+  const frameMat=new THREE.MeshPhysicalMaterial({color:0x0e0e0e,metalness:.95,roughness:.18,clearcoat:.2,envMapIntensity:2.8,roughnessMap:metalRoughMap});
+  const pipeMat=new THREE.MeshPhysicalMaterial({color:0x161616,metalness:.92,roughness:.14,envMapIntensity:2.5,roughnessMap:metalRoughMap});
+  const copperMat=new THREE.MeshPhysicalMaterial({color:0x553322,metalness:.94,roughness:.1,envMapIntensity:2.5,clearcoat:.3});
+  const cableMat=new THREE.MeshPhysicalMaterial({color:0x080808,metalness:.3,roughness:.8});
 
   // ──────────── FLOOR CABLE TRAYS ────────────
   const trayMat=new THREE.MeshPhysicalMaterial({color:0x121212,metalness:.85,roughness:.35});
@@ -1392,11 +1534,23 @@ function animate(){
     }
   });
   // Pulse the main scene reactor glow lights -- dramatic pulsing flood
-  cGlow1.intensity=5.0+Math.sin(t*1.5)*1.5;
-  cGlow2.intensity=3.5+Math.sin(t*2.2)*1.0;
-  cGlow3.intensity=4.0+Math.sin(t*1.8)*1.2;
-  cGlow4.intensity=2.5+Math.sin(t*2.8)*.8;
-  cGlow5.intensity=1.8+Math.sin(t*1.3)*.5;
+  cGlow1.intensity=6.0+Math.sin(t*1.5)*2.0;
+  cGlow2.intensity=4.5+Math.sin(t*2.2)*1.5;
+  cGlow3.intensity=5.0+Math.sin(t*1.8)*1.8;
+  cGlow4.intensity=3.5+Math.sin(t*2.8)*1.0;
+  cGlow5.intensity=2.5+Math.sin(t*1.3)*.8;
+  cUnder.intensity=1.5+Math.sin(t*1.6)*.5;
+  // Animate atmospheric dust particles -- slow drift
+  const pPos=particles.geometry.attributes.position.array;
+  for(let i=0;i<particleCount;i++){
+    pPos[i*3]+=Math.sin(t*.3+i*.1)*.0008;
+    pPos[i*3+1]+=Math.cos(t*.2+i*.05)*.0004;
+    pPos[i*3+2]+=Math.sin(t*.25+i*.08)*.0006;
+    // Reset particles that drift too far
+    if(pPos[i*3+1]>1.8)pPos[i*3+1]=.1;
+    if(pPos[i*3+1]<.05)pPos[i*3+1]=1.5;
+  }
+  particles.geometry.attributes.position.needsUpdate=true;
   cComposer.render();
 }
 animate();
