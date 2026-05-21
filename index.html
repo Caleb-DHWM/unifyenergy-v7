@@ -617,9 +617,9 @@ const cGlow5=new THREE.PointLight(0x0077EE,2,6);cGlow5.position.set(0,.6,0);cSce
 // Subtle rim light
 const cRim=new THREE.PointLight(0x334455,.3,15);cRim.position.set(4,2,-5);cScene.add(cRim);
 
-// Reflective ground plane -- dark concrete with subtle HDR reflections
+// Dark ground plane -- matte concrete, catches blue reactor spill only
 const gnd2=new THREE.Mesh(new THREE.PlaneGeometry(40,40),
-  new THREE.MeshPhysicalMaterial({color:0x060a12,metalness:.25,roughness:.7,envMapIntensity:.6}));
+  new THREE.MeshStandardMaterial({color:0x050810,metalness:.05,roughness:.95,envMapIntensity:.15}));
 gnd2.rotation.x=-Math.PI/2;gnd2.position.y=-.01;gnd2.receiveShadow=true;cScene.add(gnd2);
 // Subtle grid lines
 const gridMat=new THREE.LineBasicMaterial({color:0x1a2a3a,transparent:true,opacity:.2});
