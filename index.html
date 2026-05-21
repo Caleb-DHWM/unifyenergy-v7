@@ -617,9 +617,9 @@ const cGlow5=new THREE.PointLight(0x0077EE,2,6);cGlow5.position.set(0,.6,0);cSce
 // Subtle rim light
 const cRim=new THREE.PointLight(0x334455,.3,15);cRim.position.set(4,2,-5);cScene.add(cRim);
 
-// Reflective ground plane -- polished concrete/epoxy floor for realistic ground reflections
+// Reflective ground plane -- dark concrete with subtle HDR reflections
 const gnd2=new THREE.Mesh(new THREE.PlaneGeometry(40,40),
-  new THREE.MeshPhysicalMaterial({color:0x080e16,metalness:.4,roughness:.55,envMapIntensity:1.2}));
+  new THREE.MeshPhysicalMaterial({color:0x060a12,metalness:.25,roughness:.7,envMapIntensity:.6}));
 gnd2.rotation.x=-Math.PI/2;gnd2.position.y=-.01;gnd2.receiveShadow=true;cScene.add(gnd2);
 // Subtle grid lines
 const gridMat=new THREE.LineBasicMaterial({color:0x1a2a3a,transparent:true,opacity:.2});
@@ -768,13 +768,13 @@ function buildContainer(scale=1){
   const s=scale;
   const W=5*s,H=1.4*s,D=2*s;
   // Dark charcoal steel -- photorealistic industrial look
-  const frameMat=new THREE.MeshPhysicalMaterial({color:0x111111,metalness:.94,roughness:.22,clearcoat:.2,clearcoatRoughness:.3,envMapIntensity:2.0});
-  const wallMat=new THREE.MeshPhysicalMaterial({color:0x161616,metalness:.92,roughness:.25,envMapIntensity:2.5});
-  const ccMat=new THREE.MeshPhysicalMaterial({color:0x0a0a0a,metalness:.96,roughness:.12,clearcoat:.4,envMapIntensity:2.0});
+  const frameMat=new THREE.MeshPhysicalMaterial({color:0x111111,metalness:.94,roughness:.25,clearcoat:.2,clearcoatRoughness:.3,envMapIntensity:1.5});
+  const wallMat=new THREE.MeshPhysicalMaterial({color:0x141414,metalness:.92,roughness:.28,envMapIntensity:1.8});
+  const ccMat=new THREE.MeshPhysicalMaterial({color:0x0a0a0a,metalness:.96,roughness:.15,clearcoat:.4,envMapIntensity:1.5});
   const darkVoid=new THREE.MeshPhysicalMaterial({color:0x050508,metalness:.9,roughness:.3});
 
-  // Floor (thick steel plate with subtle reflection)
-  const floorMat=new THREE.MeshPhysicalMaterial({color:0x0e0e0e,metalness:.9,roughness:.35,envMapIntensity:1.5});
+  // Floor (thick steel plate - dark with subtle HDR reflection)
+  const floorMat=new THREE.MeshPhysicalMaterial({color:0x080808,metalness:.7,roughness:.55,envMapIntensity:.8});
   const floor=new THREE.Mesh(new THREE.BoxGeometry(W,.06*s,D),floorMat);
   floor.receiveShadow=true;g.add(floor);
 
