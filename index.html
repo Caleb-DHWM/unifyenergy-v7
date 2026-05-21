@@ -511,7 +511,7 @@ const hR=new THREE.WebGLRenderer({canvas:hCanvas,antialias:true,alpha:false});
 hR.setPixelRatio(Math.min(devicePixelRatio,2));
 hR.setClearColor(0x080E18,1);
 hR.shadowMap.enabled=true;hR.shadowMap.type=THREE.PCFSoftShadowMap;
-hR.toneMapping=THREE.ACESFilmicToneMapping;hR.toneMappingExposure=1.2;
+hR.toneMapping=THREE.ACESFilmicToneMapping;hR.toneMappingExposure=.9;
 hR.outputColorSpace=THREE.SRGBColorSpace;
 const hScene=new THREE.Scene();
 hScene.background=new THREE.Color(0x080E18);
@@ -523,23 +523,25 @@ hCam.position.set(5.5,3,6.5);hCam.lookAt(0,.5,0);
 const hCtrl=new OrbitControls(hCam,hCanvas);
 hCtrl.enableDamping=true;hCtrl.autoRotate=true;hCtrl.autoRotateSpeed=.8;hCtrl.enableZoom=false;hCtrl.target.set(0,.5,0);
 
-// Cinematic lighting
-hScene.add(new THREE.AmbientLight(0x334455,.3));
-const hKey=new THREE.DirectionalLight(0xCCDDFF,.8);hKey.position.set(3,5,4);hKey.castShadow=true;hScene.add(hKey);
-const hFill=new THREE.DirectionalLight(0x4466AA,.3);hFill.position.set(-4,3,-2);hScene.add(hFill);
-const hRim=new THREE.PointLight(0x0088CC,.6,15);hRim.position.set(-3,2,-4);hScene.add(hRim);
-// Blue glow from inside container
-const hGlow=new THREE.PointLight(0x00AAFF,1.5,6);hGlow.position.set(-.5,.6,0);hScene.add(hGlow);
+// Cinematic lighting - dark moody with intense blue reactor glow
+hScene.add(new THREE.AmbientLight(0x1a2233,.2));
+const hKey=new THREE.DirectionalLight(0x8899BB,.5);hKey.position.set(3,5,4);hKey.castShadow=true;hScene.add(hKey);
+const hFill=new THREE.DirectionalLight(0x223355,.15);hFill.position.set(-4,3,-2);hScene.add(hFill);
+const hRim=new THREE.PointLight(0x0066AA,.4,15);hRim.position.set(-3,2,-4);hScene.add(hRim);
+// Intense blue reactor glow flooding the container interior
+const hGlow=new THREE.PointLight(0x00AAFF,4,8);hGlow.position.set(-.6,.5,0);hScene.add(hGlow);
+const hGlow2b=new THREE.PointLight(0x0066DD,3,6);hGlow2b.position.set(-.8,.3,.3);hScene.add(hGlow2b);
+const hGlow3b=new THREE.PointLight(0x0088FF,2,5);hGlow3b.position.set(-.4,.6,-.2);hScene.add(hGlow3b);
 
-const miniContainer=buildContainer(.6);
+const miniContainer=buildHeroContainer(.6);
 hScene.add(miniContainer);
 const gnd=new THREE.Mesh(new THREE.PlaneGeometry(20,20),new THREE.ShadowMaterial({opacity:.2}));
 gnd.rotation.x=-Math.PI/2;gnd.receiveShadow=true;hScene.add(gnd);
 
-// Hero bloom composer
+// Hero bloom composer - stronger bloom for cinematic glow
 const hComposer=new EffectComposer(hR);
 hComposer.addPass(new RenderPass(hScene,hCam));
-const hBloom=new UnrealBloomPass(new THREE.Vector2(hCanvas.clientWidth,hCanvas.clientHeight),1.2,.3,.6);
+const hBloom=new UnrealBloomPass(new THREE.Vector2(hCanvas.clientWidth,hCanvas.clientHeight),1.8,.25,.4);
 hComposer.addPass(hBloom);
 
 function resizeHero(){
@@ -555,7 +557,7 @@ const cR=new THREE.WebGLRenderer({canvas:cCanvas,antialias:true,alpha:false});
 cR.setPixelRatio(Math.min(devicePixelRatio,2));
 cR.setClearColor(0x080E18,1);
 cR.shadowMap.enabled=true;cR.shadowMap.type=THREE.PCFSoftShadowMap;
-cR.toneMapping=THREE.ACESFilmicToneMapping;cR.toneMappingExposure=1.1;
+cR.toneMapping=THREE.ACESFilmicToneMapping;cR.toneMappingExposure=.85;
 cR.outputColorSpace=THREE.SRGBColorSpace;
 const cScene=new THREE.Scene();
 const envMap2=makeEnvMap(cR);
@@ -570,19 +572,22 @@ const cCtrl=new OrbitControls(cCam,cCanvas);
 cCtrl.enableDamping=true;cCtrl.dampingFactor=.06;cCtrl.target.set(0,.7,0);
 cCtrl.minDistance=4;cCtrl.maxDistance=18;
 
-// Cinematic 3-point lighting
-cScene.add(new THREE.AmbientLight(0x1a2235,.4));
-const cKey=new THREE.DirectionalLight(0xBBCCEE,.9);cKey.position.set(5,8,4);cKey.castShadow=true;
+// Cinematic 3-point lighting - darker key, intense blue reactor flood
+cScene.add(new THREE.AmbientLight(0x0a1220,.15));
+const cKey=new THREE.DirectionalLight(0x6688AA,.4);cKey.position.set(5,8,4);cKey.castShadow=true;
 cKey.shadow.mapSize.set(2048,2048);cKey.shadow.bias=-.0005;
 cKey.shadow.camera.left=-6;cKey.shadow.camera.right=6;cKey.shadow.camera.top=4;cKey.shadow.camera.bottom=-2;
 cScene.add(cKey);
-const cFill=new THREE.DirectionalLight(0x334466,.25);cFill.position.set(-5,4,-3);cScene.add(cFill);
-const cBack=new THREE.DirectionalLight(0x88AACC,.3);cBack.position.set(-2,3,-6);cScene.add(cBack);
-// Blue reactor glow (main interior light)
-const cGlow1=new THREE.PointLight(0x00AAFF,2.5,8);cGlow1.position.set(-1.5,.7,0);cScene.add(cGlow1);
-const cGlow2=new THREE.PointLight(0x0066DD,1.5,6);cGlow2.position.set(-.5,.5,.3);cScene.add(cGlow2);
-// Rim/edge light
-const cRim=new THREE.PointLight(0x4488AA,.5,15);cRim.position.set(4,2,-5);cScene.add(cRim);
+const cFill=new THREE.DirectionalLight(0x223344,.1);cFill.position.set(-5,4,-3);cScene.add(cFill);
+const cBack=new THREE.DirectionalLight(0x445566,.15);cBack.position.set(-2,3,-6);cScene.add(cBack);
+// INTENSE blue reactor glow flooding the entire interior -- the signature visual
+const cGlow1=new THREE.PointLight(0x00AAFF,6,12);cGlow1.position.set(-1.5,.7,0);cScene.add(cGlow1);
+const cGlow2=new THREE.PointLight(0x0066DD,4,10);cGlow2.position.set(-.5,.5,.3);cScene.add(cGlow2);
+const cGlow3=new THREE.PointLight(0x0088FF,5,10);cGlow3.position.set(-1.2,.4,-.4);cScene.add(cGlow3);
+const cGlow4=new THREE.PointLight(0x0055CC,3,8);cGlow4.position.set(-1,.9,.5);cScene.add(cGlow4);
+const cGlow5=new THREE.PointLight(0x0077EE,2,6);cGlow5.position.set(0,.6,0);cScene.add(cGlow5);
+// Subtle rim light
+const cRim=new THREE.PointLight(0x334455,.3,15);cRim.position.set(4,2,-5);cScene.add(cRim);
 
 // Subtle ground plane
 const gnd2=new THREE.Mesh(new THREE.PlaneGeometry(30,30),
@@ -600,10 +605,10 @@ for(let i=-10;i<=10;i++){
 const {group:mainContainer,interactive}=buildContainerDetailed();
 cScene.add(mainContainer);
 
-// Bloom post-processing
+// Bloom post-processing - strong bloom for cinematic blue glow bleed
 const cComposer=new EffectComposer(cR);
 cComposer.addPass(new RenderPass(cScene,cCam));
-const cBloom=new UnrealBloomPass(new THREE.Vector2(cCanvas.clientWidth,cCanvas.clientHeight),1.0,.35,.5);
+const cBloom=new UnrealBloomPass(new THREE.Vector2(cCanvas.clientWidth,cCanvas.clientHeight),1.6,.2,.35);
 cComposer.addPass(cBloom);
 
 function resizeC(){
@@ -614,6 +619,105 @@ function resizeC(){
 resizeC();window.addEventListener('resize',resizeC);
 
 /* ===== BUILD FUNCTIONS ===== */
+
+// Hero container with visible LENR reactors and key components
+function buildHeroContainer(scale=1){
+  const g=new THREE.Group();
+  const shell=buildContainer(scale);
+  g.add(shell);
+  const s=scale;
+
+  // ── LENR REACTOR CORES (the hero visual -- glowing blue) ──
+  const cellMat=new THREE.MeshPhysicalMaterial({color:0x0088DD,metalness:.4,roughness:.1,emissive:0x00AAFF,emissiveIntensity:5.0,clearcoat:.8});
+  const coreMat=new THREE.MeshPhysicalMaterial({color:0x44DDFF,emissive:0x00EEFF,emissiveIntensity:8.0,transparent:true,opacity:.85});
+  const innerMat=new THREE.MeshPhysicalMaterial({color:0xFFFFFF,emissive:0x88EEFF,emissiveIntensity:10.0,transparent:true,opacity:.6});
+  const darkMetal=new THREE.MeshPhysicalMaterial({color:0x0a0a0a,metalness:.92,roughness:.22});
+
+  // Position in left half of container (same as main scene)
+  const reactorGroup=new THREE.Group();
+  reactorGroup.position.set(-1.7*s,.55*s,0);
+  for(let row=0;row<3;row++){
+    for(let col=0;col<4;col++){
+      const px=col*.22*s-.33*s,pz=row*.32*s-.32*s;
+      // Dark casing
+      const casing=new THREE.Mesh(new THREE.CylinderGeometry(.085*s,.085*s,.6*s,12),darkMetal);
+      casing.position.set(px,0,pz);reactorGroup.add(casing);
+      // Glowing core
+      const cell=new THREE.Mesh(new THREE.CylinderGeometry(.06*s,.06*s,.62*s,12),cellMat);
+      cell.position.set(px,0,pz);reactorGroup.add(cell);
+      // White-hot inner
+      const inner=new THREE.Mesh(new THREE.CylinderGeometry(.035*s,.035*s,.58*s,8),innerMat);
+      inner.position.set(px,0,pz);reactorGroup.add(inner);
+      // Glowing top cap
+      const cap=new THREE.Mesh(new THREE.SphereGeometry(.06*s,8,6,0,Math.PI*2,0,Math.PI/2),coreMat);
+      cap.position.set(px,.31*s,pz);reactorGroup.add(cap);
+      // Per-cell point light
+      if(col%2===0||row===1){
+        const cl=new THREE.PointLight(0x0099FF,.8*s,2*s);
+        cl.position.set(px,.1*s,pz);reactorGroup.add(cl);
+      }
+    }
+  }
+  g.add(reactorGroup);
+
+  // ── BATTERY BANK (dark blocks with subtle blue indicators) ──
+  const battGroup=new THREE.Group();
+  battGroup.position.set(.7*s,.45*s,0);
+  const battMat=new THREE.MeshPhysicalMaterial({color:0x101214,metalness:.85,roughness:.3,emissive:0x020810,emissiveIntensity:.2});
+  for(let row=0;row<2;row++){
+    for(let mod=0;mod<3;mod++){
+      const block=new THREE.Mesh(new THREE.BoxGeometry(.3*s,.4*s,.4*s),battMat);
+      block.position.set(mod*.35*s-.35*s,0,row*.45*s-.22*s);battGroup.add(block);
+      // Blue LED indicator
+      const led=new THREE.Mesh(new THREE.SphereGeometry(.01*s,6,6),
+        new THREE.MeshPhysicalMaterial({emissive:0x0088FF,emissiveIntensity:2}));
+      led.position.set(mod*.35*s-.35*s,.18*s,row*.45*s-.22*s+.21*s);battGroup.add(led);
+    }
+  }
+  g.add(battGroup);
+
+  // ── SWITCHING CABINET (dark box with LEDs) ──
+  const swGroup=new THREE.Group();
+  swGroup.position.set(-.45*s,.5*s,0);
+  const swCab=new THREE.Mesh(new THREE.BoxGeometry(.5*s,.55*s,.6*s),
+    new THREE.MeshPhysicalMaterial({color:0x0e0e12,metalness:.9,roughness:.28}));
+  swGroup.add(swCab);
+  for(let i=0;i<4;i++){
+    const led=new THREE.Mesh(new THREE.SphereGeometry(.008*s,6,6),
+      new THREE.MeshPhysicalMaterial({emissive:0x0077CC,emissiveIntensity:1.5}));
+    led.position.set(-.12*s+i*.08*s,.2*s,.31*s);swGroup.add(led);
+  }
+  g.add(swGroup);
+
+  // ── CONTROLLER (small dark box, blue screen) ──
+  const ctrlGroup=new THREE.Group();
+  ctrlGroup.position.set(1.75*s,.6*s,.45*s);
+  const ctrlBox=new THREE.Mesh(new THREE.BoxGeometry(.35*s,.5*s,.4*s),
+    new THREE.MeshPhysicalMaterial({color:0x0e0e12,metalness:.9,roughness:.28}));
+  ctrlGroup.add(ctrlBox);
+  const screen=new THREE.Mesh(new THREE.BoxGeometry(.22*s,.16*s,.01*s),
+    new THREE.MeshPhysicalMaterial({color:0x001525,emissive:0x0077CC,emissiveIntensity:1.0}));
+  screen.position.set(0,.06*s,.21*s);ctrlGroup.add(screen);
+  g.add(ctrlGroup);
+
+  // ── VOLUMETRIC GLOW PLANES inside container ──
+  const glowMat=new THREE.MeshBasicMaterial({color:0x0077DD,transparent:true,opacity:.04,side:THREE.DoubleSide});
+  for(let i=0;i<6;i++){
+    const gp=new THREE.Mesh(new THREE.PlaneGeometry(3*s,.8*s),glowMat);
+    gp.position.set(-1*s,.5*s,-.5*s+i*.2*s);g.add(gp);
+  }
+  for(let i=0;i<4;i++){
+    const gp=new THREE.Mesh(new THREE.PlaneGeometry(1.2*s,.8*s),glowMat);
+    gp.position.set(-2*s+i*.4*s,.5*s,0);gp.rotation.y=Math.PI/2;g.add(gp);
+  }
+  // Blue glow pool on floor
+  const floorGlow=new THREE.Mesh(new THREE.PlaneGeometry(3*s,1.5*s),
+    new THREE.MeshBasicMaterial({color:0x0055AA,transparent:true,opacity:.05,side:THREE.DoubleSide}));
+  floorGlow.rotation.x=-Math.PI/2;floorGlow.position.set(-.5*s,.08*s,0);g.add(floorGlow);
+
+  return g;
+}
+
 function buildContainer(scale=1){
   const g=new THREE.Group();
   const s=scale;
@@ -789,47 +893,69 @@ function buildContainerDetailed(){
     let mesh;
 
     if(c.geo==='reactor'){
-      // ── LENR REACTOR: Glowing blue cores in dark containment ──
+      // ── LENR REACTOR: INTENSE glowing blue cores -- the hero visual ──
       mesh=new THREE.Group();
-      // Bright blue glowing reactor cells -- the centerpiece
-      const cellMat=new THREE.MeshPhysicalMaterial({color:0x0066AA,metalness:.6,roughness:.15,emissive:0x0088FF,emissiveIntensity:1.8,clearcoat:.6,clearcoatRoughness:.1});
-      const cellCoreMat=new THREE.MeshPhysicalMaterial({color:0x00BBFF,metalness:.3,roughness:.1,emissive:0x00CCFF,emissiveIntensity:2.5,transparent:true,opacity:.9});
+      // Ultra-bright reactor core materials
+      const cellMat=new THREE.MeshPhysicalMaterial({color:0x0088DD,metalness:.4,roughness:.1,emissive:0x00AAFF,emissiveIntensity:4.0,clearcoat:.8,clearcoatRoughness:.05});
+      const cellCoreMat=new THREE.MeshPhysicalMaterial({color:0x44DDFF,metalness:.2,roughness:.05,emissive:0x00EEFF,emissiveIntensity:6.0,transparent:true,opacity:.95});
+      const cellInnerMat=new THREE.MeshPhysicalMaterial({color:0xFFFFFF,emissive:0x66DDFF,emissiveIntensity:8.0,transparent:true,opacity:.7});
       const housingMat=new THREE.MeshPhysicalMaterial({color:0x0c0c0c,metalness:.92,roughness:.25,envMapIntensity:1.0});
       // Dark containment housing (barely visible shell)
-      const housing=new THREE.Mesh(new THREE.BoxGeometry(1.1,.95,1.4),new THREE.MeshPhysicalMaterial({color:0x080c12,metalness:.85,roughness:.3,transparent:true,opacity:.1}));
+      const housing=new THREE.Mesh(new THREE.BoxGeometry(1.1,.95,1.4),new THREE.MeshPhysicalMaterial({color:0x080c12,metalness:.85,roughness:.3,transparent:true,opacity:.06}));
       housing.position.y=-.02;mesh.add(housing);
-      const housingEdges=new THREE.LineSegments(new THREE.EdgesGeometry(housing.geometry),new THREE.LineBasicMaterial({color:0x1a3050,transparent:true,opacity:.25}));
+      const housingEdges=new THREE.LineSegments(new THREE.EdgesGeometry(housing.geometry),new THREE.LineBasicMaterial({color:0x1a4060,transparent:true,opacity:.3}));
       housingEdges.position.copy(housing.position);mesh.add(housingEdges);
-      // 3x4 reactor cells -- bright blue glow
+      // 3x4 reactor cells -- INTENSE blue glow
       for(let row=0;row<3;row++){
         for(let col=0;col<4;col++){
-          // Outer casing (dark metal)
-          const casing=new THREE.Mesh(new THREE.CylinderGeometry(.095,.095,.7,16),housingMat);
+          // Outer casing (dark metal with blue light reflection)
+          const casing=new THREE.Mesh(new THREE.CylinderGeometry(.095,.095,.7,16),
+            new THREE.MeshPhysicalMaterial({color:0x0a0a0e,metalness:.92,roughness:.2,emissive:0x001122,emissiveIntensity:.3}));
           casing.position.set(col*.22-.33,0,row*.32-.32);casing.castShadow=true;mesh.add(casing);
-          // Inner glowing core
+          // Inner glowing core (VERY bright)
           const cell=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.72,16),cellMat);
           cell.position.set(col*.22-.33,0,row*.32-.32);mesh.add(cell);
+          // White-hot inner plasma core
+          const innerCore=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.68,12),cellInnerMat);
+          innerCore.position.set(col*.22-.33,0,row*.32-.32);mesh.add(innerCore);
           // Top cap (glowing dome)
           const cap=new THREE.Mesh(new THREE.SphereGeometry(.07,12,8,0,Math.PI*2,0,Math.PI/2),cellCoreMat);
           cap.position.set(col*.22-.33,.36,row*.32-.32);mesh.add(cap);
-          // Dark cooling fin rings
-          for(let f=0;f<3;f++){
+          // Bottom cap (glowing)
+          const bcap=new THREE.Mesh(new THREE.SphereGeometry(.06,12,8,0,Math.PI*2,Math.PI/2,Math.PI/2),cellCoreMat);
+          bcap.position.set(col*.22-.33,-.36,row*.32-.32);mesh.add(bcap);
+          // Cooling fin rings (dark steel)
+          for(let f=0;f<4;f++){
             const fin=new THREE.Mesh(new THREE.TorusGeometry(.11,.008,4,16),
               new THREE.MeshPhysicalMaterial({color:0x151515,metalness:.9,roughness:.2}));
-            fin.position.set(col*.22-.33,-.15+f*.2,row*.32-.32);
+            fin.position.set(col*.22-.33,-.2+f*.15,row*.32-.32);
             fin.rotation.x=Math.PI/2;mesh.add(fin);
           }
-          // Point light per cell for glow scatter
-          if(row===1&&(col===1||col===2)){
-            const cellLight=new THREE.PointLight(0x0088FF,.4,1.5);
-            cellLight.position.set(col*.22-.33,.2,row*.32-.32);mesh.add(cellLight);
-          }
+          // Point light per EVERY cell for intense glow scatter
+          const cellLight=new THREE.PointLight(0x0099FF,1.2,2.5);
+          cellLight.position.set(col*.22-.33,.1,row*.32-.32);mesh.add(cellLight);
         }
       }
-      // Dark manifold pipes
-      const manifold=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.85,8),pipeMat);
+      // Volumetric blue glow planes (fake volumetric light inside reactor area)
+      const glowPlaneMat=new THREE.MeshBasicMaterial({color:0x0088FF,transparent:true,opacity:.06,side:THREE.DoubleSide});
+      for(let i=0;i<5;i++){
+        const gp=new THREE.Mesh(new THREE.PlaneGeometry(1,.8),glowPlaneMat);
+        gp.position.set(0,0,-.4+i*.2);mesh.add(gp);
+      }
+      for(let i=0;i<4;i++){
+        const gp=new THREE.Mesh(new THREE.PlaneGeometry(.9,.8),glowPlaneMat);
+        gp.position.set(-.4+i*.25,0,0);gp.rotation.y=Math.PI/2;mesh.add(gp);
+      }
+      // Horizontal glow plane (light pool on floor)
+      const floorGlow=new THREE.Mesh(new THREE.PlaneGeometry(1.2,1.4),
+        new THREE.MeshBasicMaterial({color:0x0066CC,transparent:true,opacity:.08,side:THREE.DoubleSide}));
+      floorGlow.rotation.x=-Math.PI/2;floorGlow.position.y=-.45;mesh.add(floorGlow);
+      // Dark manifold pipes (with subtle blue reflection)
+      const manifold=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.85,8),
+        new THREE.MeshPhysicalMaterial({color:0x151520,metalness:.88,roughness:.2,emissive:0x001530,emissiveIntensity:.2}));
       manifold.rotation.z=Math.PI/2;manifold.position.set(0,.38,0);mesh.add(manifold);
-      const manifold2=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.9,8),pipeMat);
+      const manifold2=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.9,8),
+        new THREE.MeshPhysicalMaterial({color:0x151520,metalness:.88,roughness:.2,emissive:0x001530,emissiveIntensity:.2}));
       manifold2.rotation.x=Math.PI/2;manifold2.position.set(.33,.38,0);mesh.add(manifold2);
       // Dark base rack
       const rack=new THREE.Mesh(new THREE.BoxGeometry(1.05,.04,1.05),housingMat);
@@ -1059,6 +1185,26 @@ function buildContainerDetailed(){
     }
   });
 
+  // ──────────── VOLUMETRIC BLUE GLOW (fake volumetric interior light) ────────────
+  const volMat=new THREE.MeshBasicMaterial({color:0x0077DD,transparent:true,opacity:.035,side:THREE.DoubleSide});
+  // Cross-section planes filling the reactor area
+  for(let i=0;i<8;i++){
+    const vp=new THREE.Mesh(new THREE.PlaneGeometry(3.5,1.2),volMat);
+    vp.position.set(-1,.6,-.8+i*.25);g.add(vp);
+  }
+  for(let i=0;i<6;i++){
+    const vp=new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.2),volMat);
+    vp.position.set(-2.2+i*.3,.6,0);vp.rotation.y=Math.PI/2;g.add(vp);
+  }
+  // Large blue floor glow pool under reactor area
+  const bigFloorGlow=new THREE.Mesh(new THREE.PlaneGeometry(4,2),
+    new THREE.MeshBasicMaterial({color:0x0055AA,transparent:true,opacity:.06,side:THREE.DoubleSide}));
+  bigFloorGlow.rotation.x=-Math.PI/2;bigFloorGlow.position.set(-.5,.07,0);g.add(bigFloorGlow);
+  // Overhead blue glow (light scattering on ceiling)
+  const ceilGlow=new THREE.Mesh(new THREE.PlaneGeometry(3,1.5),
+    new THREE.MeshBasicMaterial({color:0x0066BB,transparent:true,opacity:.03,side:THREE.DoubleSide}));
+  ceilGlow.rotation.x=-Math.PI/2;ceilGlow.position.set(-1,1.35,0);g.add(ceilGlow);
+
   // ──────────── DIMENSION LABELS with LEADER LINES ────────────
   function addLabel(text,pos,lineEnd){
     const cv=document.createElement('canvas');cv.width=320;cv.height=36;
@@ -1182,8 +1328,10 @@ function animate(){
   requestAnimationFrame(animate);
   const t=clock.getElapsedTime();
   hCtrl.update();
-  // Rotate hero turbine
-  miniContainer.traverse(c=>{/* auto-rotates via controls */});
+  // Pulse hero glow lights for living reactor effect
+  hGlow.intensity=3.5+Math.sin(t*1.8)*1.0;
+  hGlow2b.intensity=2.5+Math.sin(t*2.5)*.8;
+  hGlow3b.intensity=1.8+Math.sin(t*1.2)*.6;
   hComposer.render();
   cCtrl.update();
   // Rotate VAWT blades and pulse reactor glow
@@ -1194,10 +1342,10 @@ function animate(){
       });
     }
     if(obj.userData?.geo==='reactor'){
-      // Pulsing blue reactor glow
+      // Pulsing blue reactor glow -- intense
       obj.traverse(c=>{
         if(c.material&&c.material.emissiveIntensity!==undefined&&c.geometry?.type==='CylinderGeometry'){
-          c.material.emissiveIntensity=1.5+Math.sin(t*2)*.5;
+          c.material.emissiveIntensity=3.5+Math.sin(t*2)*1.5;
         }
       });
     }
@@ -1209,9 +1357,12 @@ function animate(){
       });
     }
   });
-  // Pulse the reactor glow lights
-  cGlow1.intensity=2.0+Math.sin(t*1.5)*.8;
-  cGlow2.intensity=1.2+Math.sin(t*2.2)*.5;
+  // Pulse the main scene reactor glow lights -- dramatic pulsing flood
+  cGlow1.intensity=5.0+Math.sin(t*1.5)*1.5;
+  cGlow2.intensity=3.5+Math.sin(t*2.2)*1.0;
+  cGlow3.intensity=4.0+Math.sin(t*1.8)*1.2;
+  cGlow4.intensity=2.5+Math.sin(t*2.8)*.8;
+  cGlow5.intensity=1.8+Math.sin(t*1.3)*.5;
   cComposer.render();
 }
 animate();
