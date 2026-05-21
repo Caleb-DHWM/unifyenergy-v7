@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unify Energy LLC - 1MW Integrated Power Pack</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Source+Code+Pro:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+--navy:#0A1628;--navy-light:#122240;--navy-mid:#1a3055;
+--white:#FFFFFF;--offwhite:#F4F6F9;--cream:#E8ECF2;
+--cyan:#00C8FF;--cyan-dark:#0099CC;
+--text-dark:#0A1628;--text-mid:#3A4A6B;--text-light:#7A8AAB;
+--border:#D0D8E8;--border-light:#E8ECF2;
+--font-sans:'DM Sans',sans-serif;--font-serif:'Playfair Display',serif;--font-mono:'Source Code Pro',monospace;
+}
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{background:var(--white);color:var(--text-dark);font-family:var(--font-sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+/* NAVIGATION */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-light);padding:0 60px;height:64px;display:flex;align-items:center;justify-content:space-between}
+.topbar-logo{font-family:var(--font-sans);font-weight:700;font-size:15px;letter-spacing:1.5px;color:var(--navy);text-transform:uppercase}
+.topbar-logo span{color:var(--cyan-dark);font-weight:400}
+.topbar-nav{display:flex;gap:36px;align-items:center}
+.topbar-nav a{font-size:13px;font-weight:500;color:var(--text-mid);letter-spacing:.5px;text-decoration:none;transition:color .2s}
+.topbar-nav a:hover{color:var(--navy)}
+.topbar-cta{font-size:12px;font-weight:600;color:var(--white);background:var(--navy);padding:10px 24px;letter-spacing:.5px;text-decoration:none;transition:background .2s}
+.topbar-cta:hover{background:var(--navy-light)}
+
+/* HERO - SPLIT SCREEN */
+.hero{margin-top:64px;display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 64px)}
+.hero-left{background:var(--navy);padding:80px 60px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+.hero-left::before{content:'';position:absolute;top:-50%;right:-30%;width:80%;height:200%;background:radial-gradient(ellipse,rgba(0,200,255,.06) 0%,transparent 70%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;letter-spacing:2px;color:var(--cyan);text-transform:uppercase;margin-bottom:32px;padding:6px 14px;border:1px solid rgba(0,200,255,.25);width:fit-content}
+.hero-badge::before{content:'';width:6px;height:6px;background:var(--cyan);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hero-h1{font-family:var(--font-serif);font-size:clamp(36px,4.5vw,62px);font-weight:600;line-height:1.15;color:var(--white);margin-bottom:28px;letter-spacing:-.5px}
+.hero-h1 em{font-style:italic;color:var(--cyan)}
+.hero-p{font-size:17px;line-height:1.75;color:rgba(255,255,255,.6);max-width:480px;font-weight:300;margin-bottom:40px}
+.hero-specs{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;border-top:1px solid rgba(255,255,255,.1);padding-top:32px}
+.hero-spec-val{font-family:var(--font-mono);font-size:28px;font-weight:600;color:var(--cyan)}
+.hero-spec-label{font-size:12px;color:rgba(255,255,255,.4);margin-top:4px;letter-spacing:.5px}
+.hero-right{background:var(--offwhite);display:flex;align-items:center;justify-content:center;position:relative;padding:40px}
+.hero-right canvas{width:100%!important;height:100%!important}
+.hero-3d-label{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-family:var(--font-mono);font-size:10px;letter-spacing:2px;color:var(--text-light);text-transform:uppercase;background:rgba(255,255,255,.8);padding:6px 16px;border:1px solid var(--border)}
+
+/* FLOW SECTION */
+.flow-section{padding:120px 60px;background:var(--white)}
+.section-label{font-family:var(--font-mono);font-size:11px;letter-spacing:3px;color:var(--cyan-dark);text-transform:uppercase;margin-bottom:16px}
+.section-heading{font-family:var(--font-serif);font-size:clamp(28px,3.5vw,44px);font-weight:600;line-height:1.25;color:var(--navy);margin-bottom:20px;max-width:600px;letter-spacing:-.3px}
+.section-desc{font-size:16px;line-height:1.75;color:var(--text-mid);max-width:560px;font-weight:300;margin-bottom:60px}
+.flow-diagram{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:20px}
+.flow-step{flex:1;min-width:200px;padding:32px 28px;background:var(--offwhite);border:1px solid var(--border-light);position:relative;display:flex;flex-direction:column}
+.flow-step:not(:last-child)::after{content:'';position:absolute;right:-12px;top:50%;transform:translateY(-50%);width:24px;height:24px;background:var(--white);border:2px solid var(--cyan);border-radius:50%;z-index:2;display:flex;align-items:center;justify-content:center}
+.flow-step-num{font-family:var(--font-mono);font-size:10px;color:var(--cyan-dark);letter-spacing:2px;margin-bottom:12px}
+.flow-step h4{font-size:15px;font-weight:600;color:var(--navy);margin-bottom:8px}
+.flow-step p{font-size:13px;line-height:1.6;color:var(--text-light);font-weight:300;flex:1}
+.flow-arrow{width:40px;display:flex;align-items:center;justify-content:center;color:var(--cyan);font-size:20px;flex-shrink:0}
+
+/* TECHNOLOGY TABS */
+.tech-section{padding:120px 60px;background:var(--navy)}
+.tech-section .section-label{color:var(--cyan)}
+.tech-section .section-heading{color:var(--white);margin-bottom:60px}
+.tech-tabs{display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:48px;overflow-x:auto}
+.tech-tab{padding:16px 28px;font-family:var(--font-mono);font-size:12px;letter-spacing:1.5px;color:rgba(255,255,255,.4);cursor:pointer;text-transform:uppercase;border-bottom:2px solid transparent;transition:all .3s;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none}
+.tech-tab:hover{color:rgba(255,255,255,.7)}
+.tech-tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.tech-panel{display:none;grid-template-columns:1fr 1fr;gap:60px;align-items:start}
+.tech-panel.active{display:grid}
+.tech-info h3{font-family:var(--font-serif);font-size:32px;font-weight:600;color:var(--white);margin-bottom:16px;letter-spacing:-.3px}
+.tech-info .tech-desc{font-size:16px;line-height:1.75;color:rgba(255,255,255,.55);font-weight:300;margin-bottom:32px}
+.tech-features{list-style:none}
+.tech-features li{padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:12px;font-size:14px;color:rgba(255,255,255,.7)}
+.tech-features li::before{content:'';width:6px;height:6px;background:var(--cyan);flex-shrink:0}
+.tech-specs-table{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);padding:36px}
+.tech-specs-table h4{font-family:var(--font-mono);font-size:11px;letter-spacing:2px;color:var(--cyan);text-transform:uppercase;margin-bottom:24px}
+.spec-row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.spec-row:last-child{border:none}
+.spec-key{font-size:13px;color:rgba(255,255,255,.4)}
+.spec-val{font-family:var(--font-mono);font-size:13px;color:var(--white);font-weight:500;text-align:right}
+
+/* 3D CONTAINER SECTION */
+.container-section{padding:0;background:var(--offwhite)}
+.container-header{padding:100px 60px 40px;text-align:center}
+.container-header .section-heading{margin:0 auto 16px;max-width:700px}
+.container-header .section-desc{margin:0 auto}
+.container-viewer{position:relative;height:75vh;min-height:500px;background:linear-gradient(180deg,var(--offwhite) 0%,#dde3ed 100%)}
+.container-viewer canvas{width:100%!important;height:100%!important;cursor:grab}
+.container-viewer canvas:active{cursor:grabbing}
+.viewer-controls{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:12px;font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--text-light);text-transform:uppercase}
+.viewer-controls span{background:var(--white);border:1px solid var(--border);padding:6px 14px}
+
+/* TOOLTIP */
+#tip{position:fixed;z-index:300;pointer-events:none;opacity:0;transition:opacity .15s}
+#tip .tip-box{background:var(--navy);color:var(--white);padding:14px 18px;box-shadow:0 8px 32px rgba(10,22,40,.3);max-width:280px}
+#tip .tip-name{font-weight:600;font-size:14px;margin-bottom:4px}
+#tip .tip-desc{font-size:12px;line-height:1.5;color:rgba(255,255,255,.6);font-weight:300}
+#tip .tip-cta{font-family:var(--font-mono);font-size:9px;letter-spacing:1.5px;color:var(--cyan);text-transform:uppercase;margin-top:8px}
+
+/* DETAIL MODAL */
+#modal{position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center}
+#modal.open{display:flex}
+#modal-bg{position:absolute;inset:0;background:rgba(10,22,40,.7);backdrop-filter:blur(8px)}
+#modal-card{position:relative;background:var(--white);max-width:520px;width:92%;padding:48px;box-shadow:0 24px 80px rgba(0,0,0,.2)}
+#modal-close{position:absolute;top:16px;right:20px;font-family:var(--font-mono);font-size:11px;color:var(--text-light);cursor:pointer;background:none;border:none;letter-spacing:1px}
+#modal-close:hover{color:var(--navy)}
+#modal-card .modal-tag{font-family:var(--font-mono);font-size:10px;letter-spacing:2px;color:var(--cyan-dark);text-transform:uppercase;margin-bottom:8px}
+#modal-card h3{font-family:var(--font-serif);font-size:28px;font-weight:600;color:var(--navy);margin-bottom:12px}
+#modal-card .modal-desc{font-size:15px;line-height:1.7;color:var(--text-mid);font-weight:300;margin-bottom:28px}
+.modal-specs{border-top:1px solid var(--border)}
+.modal-spec{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border-light)}
+.modal-spec .ms-key{font-size:13px;color:var(--text-light)}
+.modal-spec .ms-val{font-family:var(--font-mono);font-size:13px;color:var(--navy);font-weight:500}
+
+/* DEPLOYMENT */
+.deploy-section{padding:120px 60px;background:var(--white)}
+.deploy-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px;margin-bottom:80px}
+.deploy-card{padding:36px 28px;border:1px solid var(--border);text-align:center;transition:border-color .3s,box-shadow .3s}
+.deploy-card:hover{border-color:var(--cyan);box-shadow:0 8px 32px rgba(0,200,255,.08)}
+.deploy-card .dc-icon{font-family:var(--font-mono);font-size:32px;font-weight:700;color:var(--cyan-dark);margin-bottom:16px}
+.deploy-card h4{font-size:15px;font-weight:600;color:var(--navy);margin-bottom:8px}
+.deploy-card p{font-size:13px;line-height:1.6;color:var(--text-light);font-weight:300}
+
+/* SPECS TABLE */
+.specs-banner{background:var(--navy);padding:80px 60px;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start}
+.specs-col h3{font-family:var(--font-serif);font-size:28px;color:var(--white);font-weight:600;margin-bottom:32px}
+.specs-row{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.specs-row .sr-key{font-size:14px;color:rgba(255,255,255,.4)}
+.specs-row .sr-val{font-family:var(--font-mono);font-size:14px;color:var(--white);font-weight:500}
+.ideal-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.ideal-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:20px;font-size:14px;color:rgba(255,255,255,.7);font-weight:300}
+.ideal-item strong{display:block;font-weight:600;color:var(--white);margin-bottom:4px;font-size:13px}
+
+/* CONTACT */
+.contact-section{padding:120px 60px;background:var(--offwhite);text-align:center}
+.contact-section .section-heading{margin:0 auto 16px}
+.contact-section .section-desc{margin:0 auto 48px;max-width:480px}
+.contact-btn{display:inline-block;font-family:var(--font-sans);font-size:14px;font-weight:600;color:var(--white);background:var(--navy);padding:16px 40px;letter-spacing:.5px;text-decoration:none;transition:all .3s}
+.contact-btn:hover{background:var(--navy-light);transform:translateY(-1px);box-shadow:0 8px 24px rgba(10,22,40,.2)}
+
+/* FOOTER */
+.footer{padding:32px 60px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:12px;color:var(--text-light)}
+
+/* REVEAL */
+.rv{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.rv.vis{opacity:1;transform:none}
+
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr}
+  .hero-right{min-height:50vh}
+  .topbar{padding:0 24px}
+  .topbar-nav{display:none}
+  .hero-left,.flow-section,.tech-section,.container-header,.deploy-section,.contact-section{padding-left:24px;padding-right:24px}
+  .tech-panel.active{grid-template-columns:1fr}
+  .deploy-grid{grid-template-columns:1fr 1fr}
+  .specs-banner{grid-template-columns:1fr;padding:60px 24px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div class="topbar">
+  <div class="topbar-logo">Unify Energy <span>LLC</span></div>
+  <nav class="topbar-nav">
+    <a href="#flow">Architecture</a>
+    <a href="#tech">Technology</a>
+    <a href="#system">System</a>
+    <a href="#deploy">Deployment</a>
+    <a href="#contact" class="topbar-cta">Investor Access</a>
+  </nav>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-badge">Now Seeking Strategic Partners</div>
+    <h1 class="hero-h1">The 1 MW<br><em>Integrated</em><br>Power Pack</h1>
+    <p class="hero-p">Six converging energy technologies housed inside a standard 20-foot shipping container. Plug-and-play deployment. Complete off-grid and data center power solution.</p>
+    <div class="hero-specs">
+      <div><div class="hero-spec-val">1 MW</div><div class="hero-spec-label">Continuous Output</div></div>
+      <div><div class="hero-spec-val">20 ft</div><div class="hero-spec-label">ISO Container</div></div>
+      <div><div class="hero-spec-val">>90%</div><div class="hero-spec-label">System Efficiency</div></div>
+    </div>
+  </div>
+  <div class="hero-right">
+    <canvas id="hero-3d"></canvas>
+    <div class="hero-3d-label">Interactive 3D Preview / Drag to Rotate</div>
+  </div>
+</section>
+
+<!-- SYSTEM ARCHITECTURE FLOW -->
+<section class="flow-section" id="flow">
+  <div class="section-label rv">System Architecture Overview</div>
+  <h2 class="section-heading rv">How power flows through the system</h2>
+  <p class="section-desc rv">Primary energy inputs are optimized through Jullian Perry switching, stored in graphene batteries, supplemented by electret harvesting, and distributed by AI-governed smart grid control.</p>
+  <div class="flow-diagram rv">
+    <div class="flow-step">
+      <div class="flow-step-num">01</div>
+      <h4>Primary Energy Inputs</h4>
+      <p>ENG8 LENR Catalyzed Fusion Cell and VAWT Wind Turbine Array generate continuous baseload power.</p>
+    </div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-step">
+      <div class="flow-step-num">02</div>
+      <h4>Power Management</h4>
+      <p>Jullian Perry Battery Switching Technology performs dynamic optimization, multiplying efficiency and reducing heat.</p>
+    </div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-step">
+      <div class="flow-step-num">03</div>
+      <h4>Energy Storage</h4>
+      <p>Graphene Battery Bank provides high-density storage with fast charge/discharge and extended cycle life.</p>
+    </div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-step">
+      <div class="flow-step-num">04</div>
+      <h4>Supplemental Top-Off</h4>
+      <p>Electret Energy Harvesting captures ambient electromagnetic and vibrational energy for passive supplementation.</p>
+    </div>
+    <div class="flow-arrow">&#8594;</div>
+    <div class="flow-step">
+      <div class="flow-step-num">05</div>
+      <h4>AC Power Output</h4>
+      <p>AI Smart Grid Control governs load balancing, predictive maintenance, and 1 MW continuous AC distribution.</p>
+    </div>
+  </div>
+</section>
+
+<!-- TECHNOLOGY TABS -->
+<section class="tech-section" id="tech">
+  <div class="section-label rv">Core Technologies</div>
+  <h2 class="section-heading rv">Six integrated subsystems</h2>
+  <div class="tech-tabs rv" id="tech-tabs">
+    <button class="tech-tab active" data-tab="0">ENG8 LENR</button>
+    <button class="tech-tab" data-tab="1">VAWT Wind</button>
+    <button class="tech-tab" data-tab="2">Graphene Battery</button>
+    <button class="tech-tab" data-tab="3">Jullian Perry</button>
+    <button class="tech-tab" data-tab="4">Electret</button>
+    <button class="tech-tab" data-tab="5">AI Smart Grid</button>
+  </div>
+  <div class="tech-panel active" data-panel="0">
+    <div class="tech-info">
+      <h3>ENG8 LENR Cell</h3>
+      <p class="tech-desc">Catalyzed fusion reactor providing continuous baseload power. The primary energy source of the integrated system, delivering high coefficient of performance output in a compact, low-thermal-signature form factor.</p>
+      <ul class="tech-features">
+        <li>Catalyzed fusion reaction</li>
+        <li>Continuous baseload generation</li>
+        <li>High COP output</li>
+        <li>Compact cell array</li>
+        <li>Low thermal signature</li>
+      </ul>
+    </div>
+    <div class="tech-specs-table">
+      <h4>Technical Parameters</h4>
+      <div class="spec-row"><span class="spec-key">Technology</span><span class="spec-val">LENR Catalyzed Fusion</span></div>
+      <div class="spec-row"><span class="spec-key">Role</span><span class="spec-val">Primary Baseload</span></div>
+      <div class="spec-row"><span class="spec-key">Output Type</span><span class="spec-val">Thermal to Electric</span></div>
+      <div class="spec-row"><span class="spec-key">Form Factor</span><span class="spec-val">Modular Cell Array</span></div>
+      <div class="spec-row"><span class="spec-key">Thermal Signature</span><span class="spec-val">Low</span></div>
+      <div class="spec-row"><span class="spec-key">Maintenance</span><span class="spec-val">Minimal / Autonomous</span></div>
+    </div>
+  </div>
+  <div class="tech-panel" data-panel="1">
+    <div class="tech-info">
+      <h3>VAWT Wind Turbine</h3>
+      <p class="tech-desc">Vertical-axis wind turbine array mounted on the container exterior. Provides supplemental generation with omnidirectional intake, quiet operation, and all-weather reliability.</p>
+      <ul class="tech-features">
+        <li>Omnidirectional wind capture</li>
+        <li>Quiet operation profile</li>
+        <li>Low maintenance requirements</li>
+        <li>High mechanical reliability</li>
+        <li>All-weather performance</li>
+      </ul>
+    </div>
+    <div class="tech-specs-table">
+      <h4>Technical Parameters</h4>
+      <div class="spec-row"><span class="spec-key">Type</span><span class="spec-val">Vertical Axis</span></div>
+      <div class="spec-row"><span class="spec-key">Role</span><span class="spec-val">Supplemental Generation</span></div>
+      <div class="spec-row"><span class="spec-key">Operation</span><span class="spec-val">Omnidirectional</span></div>
+      <div class="spec-row"><span class="spec-key">Noise Level</span><span class="spec-val">Minimal</span></div>
+      <div class="spec-row"><span class="spec-key">Weather Rating</span><span class="spec-val">All-Condition</span></div>
+      <div class="spec-row"><span class="spec-key">Maintenance</span><span class="spec-val">Low</span></div>
+    </div>
+  </div>
+  <div class="tech-panel" data-panel="2">
+    <div class="tech-info">
+      <h3>Graphene Battery Bank</h3>
+      <p class="tech-desc">Next-generation energy storage using graphene composite chemistry. Delivers high energy density with rapid charge/discharge cycles, thermal stability, and non-flammable safety profile.</p>
+      <ul class="tech-features">
+        <li>High energy density</li>
+        <li>Fast charge and discharge</li>
+        <li>Long cycle life</li>
+        <li>Thermal stability</li>
+        <li>Non-flammable chemistry</li>
+      </ul>
+    </div>
+    <div class="tech-specs-table">
+      <h4>Technical Parameters</h4>
+      <div class="spec-row"><span class="spec-key">Chemistry</span><span class="spec-val">Graphene Composite</span></div>
+      <div class="spec-row"><span class="spec-key">Role</span><span class="spec-val">Energy Storage</span></div>
+      <div class="spec-row"><span class="spec-key">Capacity</span><span class="spec-val">Configurable</span></div>
+      <div class="spec-row"><span class="spec-key">Charge Rate</span><span class="spec-val">Fast Charge</span></div>
+      <div class="spec-row"><span class="spec-key">Safety</span><span class="spec-val">Non-Flammable</span></div>
+      <div class="spec-row"><span class="spec-key">Cycle Life</span><span class="spec-val">Extended</span></div>
+    </div>
+  </div>
+  <div class="tech-panel" data-panel="3">
+    <div class="tech-info">
+      <h3>Jullian Perry Battery Switching</h3>
+      <p class="tech-desc">Proprietary dynamic switching technology that optimizes power routing across all generation and storage subsystems. Multiplies system efficiency while actively reducing heat and extending battery life.</p>
+      <ul class="tech-features">
+        <li>Dynamic switching optimization</li>
+        <li>Efficiency multiplier effect</li>
+        <li>Active heat reduction</li>
+        <li>Extended battery longevity</li>
+        <li>Intelligent power routing</li>
+      </ul>
+    </div>
+    <div class="tech-specs-table">
+      <h4>Technical Parameters</h4>
+      <div class="spec-row"><span class="spec-key">Technology</span><span class="spec-val">Jullian Perry Switching</span></div>
+      <div class="spec-row"><span class="spec-key">Function</span><span class="spec-val">Dynamic Power Optimization</span></div>
+      <div class="spec-row"><span class="spec-key">Benefit</span><span class="spec-val">Efficiency Multiplier</span></div>
+      <div class="spec-row"><span class="spec-key">Heat Management</span><span class="spec-val">Active Reduction</span></div>
+      <div class="spec-row"><span class="spec-key">Battery Impact</span><span class="spec-val">Life Extension</span></div>
+      <div class="spec-row"><span class="spec-key">Control</span><span class="spec-val">Autonomous</span></div>
+    </div>
+  </div>
+  <div class="tech-panel" data-panel="4">
+    <div class="tech-info">
+      <h3>Electret Energy Harvesting</h3>
+      <p class="tech-desc">Permanently polarized material modules that passively capture ambient electromagnetic and vibrational energy. Zero fuel, zero moving parts, providing continuous trickle-charge supplementation.</p>
+      <ul class="tech-features">
+        <li>Ambient energy harvesting</li>
+        <li>Electrostatic capture</li>
+        <li>Trickle charge support</li>
+        <li>System efficiency boost</li>
+        <li>Zero fuel / zero moving parts</li>
+      </ul>
+    </div>
+    <div class="tech-specs-table">
+      <h4>Technical Parameters</h4>
+      <div class="spec-row"><span class="spec-key">Type</span><span class="spec-val">Electret Material</span></div>
+      <div class="spec-row"><span class="spec-key">Source</span><span class="spec-val">Ambient EM / Vibration</span></div>
+      <div class="spec-row"><span class="spec-key">Role</span><span class="spec-val">Supplemental Top-Off</span></div>
+      <div class="spec-row"><span class="spec-key">Maintenance</span><span class="spec-val">Zero</span></div>
+      <div class="spec-row"><span class="spec-key">Moving Parts</span><span class="spec-val">None</span></div>
+      <div class="spec-row"><span class="spec-key">Lifespan</span><span class="spec-val">Permanent</span></div>
+    </div>
+  </div>
+  <div class="tech-panel" data-panel="5">
+    <div class="tech-info">
+      <h3>AI Smart Grid Control</h3>
+      <p class="tech-desc">Machine learning governor that orchestrates the entire power system. Real-time monitoring, predictive maintenance, remote telemetry, and autonomous load balancing across all generation and storage subsystems.</p>
+      <ul class="tech-features">
+        <li>AI-driven load balancing</li>
+        <li>Real-time system monitoring</li>
+        <li>Predictive maintenance</li>
+        <li>Remote telemetry interface</li>
+        <li>Autonomous operation</li>
+      </ul>
+    </div>
+    <div class="tech-specs-table">
+      <h4>Technical Parameters</h4>
+      <div class="spec-row"><span class="spec-key">System</span><span class="spec-val">Neural Network</span></div>
+      <div class="spec-row"><span class="spec-key">Function</span><span class="spec-val">Load Optimization</span></div>
+      <div class="spec-row"><span class="spec-key">Monitoring</span><span class="spec-val">Predictive</span></div>
+      <div class="spec-row"><span class="spec-key">Interface</span><span class="spec-val">Remote Dashboard</span></div>
+      <div class="spec-row"><span class="spec-key">Protocol</span><span class="spec-val">Mesh Network</span></div>
+      <div class="spec-row"><span class="spec-key">Operation</span><span class="spec-val">Fully Autonomous</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3D CONTAINER -->
+<section class="container-section" id="system">
+  <div class="container-header">
+    <div class="section-label rv">20-Foot Container / Internal Layout</div>
+    <h2 class="section-heading rv">Complete power plant in a single container</h2>
+    <p class="section-desc rv">Hover over internal components to identify. Click any component for full technical specifications.</p>
+  </div>
+  <div class="container-viewer">
+    <canvas id="container-3d"></canvas>
+    <div class="viewer-controls">
+      <span>Drag to rotate</span>
+      <span>Scroll to zoom</span>
+      <span>Hover to identify</span>
+      <span>Click for specs</span>
+    </div>
+  </div>
+</section>
+
+<!-- TOOLTIP -->
+<div id="tip"><div class="tip-box"><div class="tip-name"></div><div class="tip-desc"></div><div class="tip-cta">Click for specifications</div></div></div>
+
+<!-- DETAIL MODAL -->
+<div id="modal">
+  <div id="modal-bg"></div>
+  <div id="modal-card">
+    <button id="modal-close">Close</button>
+    <div class="modal-tag">System Component</div>
+    <h3 id="m-title"></h3>
+    <p class="modal-desc" id="m-desc"></p>
+    <div class="modal-specs" id="m-specs"></div>
+  </div>
+</div>
+
+<!-- DEPLOYMENT -->
+<section class="deploy-section" id="deploy">
+  <div class="section-label rv">Deployment Options</div>
+  <h2 class="section-heading rv">Designed for global deployment</h2>
+  <p class="section-desc rv">Mobile, rapid, scalable power infrastructure for any environment.</p>
+  <div class="deploy-grid rv">
+    <div class="deploy-card">
+      <div class="dc-icon">01</div>
+      <h4>Off-Grid Communities</h4>
+      <p>Reliable power for remote villages, island nations, and areas without grid infrastructure.</p>
+    </div>
+    <div class="deploy-card">
+      <div class="dc-icon">02</div>
+      <h4>AI Data Centers</h4>
+      <p>Dedicated, clean power for edge computing and AI processing facilities.</p>
+    </div>
+    <div class="deploy-card">
+      <div class="dc-icon">03</div>
+      <h4>Industrial Facilities</h4>
+      <p>Continuous heavy-duty power for manufacturing, mining, and industrial operations.</p>
+    </div>
+    <div class="deploy-card">
+      <div class="dc-icon">04</div>
+      <h4>Emergency Response</h4>
+      <p>Rapid-deployment disaster relief power. Plug-and-play within hours of arrival.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SPECS + IDEAL FOR -->
+<div class="specs-banner">
+  <div class="specs-col">
+    <h3>Technical Specifications</h3>
+    <div class="specs-row"><span class="sr-key">Container Size</span><span class="sr-val">20 Feet (ISO)</span></div>
+    <div class="specs-row"><span class="sr-key">Continuous Output</span><span class="sr-val">Up to 1 MW</span></div>
+    <div class="specs-row"><span class="sr-key">Peak Output</span><span class="sr-val">1.5 - 2 MW</span></div>
+    <div class="specs-row"><span class="sr-key">Battery Capacity</span><span class="sr-val">Configurable</span></div>
+    <div class="specs-row"><span class="sr-key">System Efficiency</span><span class="sr-val">> 90%</span></div>
+    <div class="specs-row"><span class="sr-key">Operating Temp</span><span class="sr-val">-20C to 50C</span></div>
+    <div class="specs-row"><span class="sr-key">Deployment</span><span class="sr-val">Global (Air, Sea, Land)</span></div>
+    <div class="specs-row"><span class="sr-key">System Life</span><span class="sr-val">20+ Years (Design Life)</span></div>
+  </div>
+  <div class="specs-col">
+    <h3>Ideal Applications</h3>
+    <div class="ideal-grid">
+      <div class="ideal-item"><strong>Mobile</strong>Transportable power for forward operating bases and expeditionary use</div>
+      <div class="ideal-item"><strong>Rapid Deployment</strong>Plug-and-play power in under 24 hours from arrival</div>
+      <div class="ideal-item"><strong>Scalable</strong>Multi-MW systems by networking multiple containers</div>
+      <div class="ideal-item"><strong>Remote / Off-Grid</strong>Permanent power for locations without grid access</div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT -->
+<section class="contact-section" id="contact">
+  <div class="section-label rv">Investor Relations</div>
+  <h2 class="section-heading rv">Partner with the future of energy</h2>
+  <p class="section-desc rv">We are actively seeking strategic investors and partners to scale production and accelerate global deployment of the 1 MW Integrated Power Pack.</p>
+  <a href="mailto:invest@unifyenergy.com" class="contact-btn rv">Request Investor Materials</a>
+</section>
+
+<!-- FOOTER -->
+<div class="footer">
+  <span>Unify Energy LLC / 2026 / Confidential</span>
+  <span>Energy Independence. Anywhere. Anytime.</span>
+</div>
+
+<!-- THREE.JS -->
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+/* ===== HERO 3D - Small rotating container preview ===== */
+const hCanvas=document.getElementById('hero-3d');
+const hR=new THREE.WebGLRenderer({canvas:hCanvas,antialias:true,alpha:true});
+hR.setPixelRatio(Math.min(devicePixelRatio,2));
+hR.shadowMap.enabled=true;
+const hScene=new THREE.Scene();
+const hCam=new THREE.PerspectiveCamera(35,hCanvas.clientWidth/hCanvas.clientHeight,.1,50);
+hCam.position.set(5,3,6);hCam.lookAt(0,.5,0);
+const hCtrl=new OrbitControls(hCam,hCanvas);
+hCtrl.enableDamping=true;hCtrl.autoRotate=true;hCtrl.autoRotateSpeed=1.2;hCtrl.enableZoom=false;hCtrl.target.set(0,.5,0);
+
+hScene.add(new THREE.AmbientLight(0x8899BB,.7));
+const hDL=new THREE.DirectionalLight(0xffffff,.9);hDL.position.set(4,6,3);hDL.castShadow=true;hScene.add(hDL);
+hScene.add(new THREE.PointLight(0x00C8FF,.4,20).translateX(-3).translateY(2));
+
+// Mini container
+const miniContainer=buildContainer(.6);
+hScene.add(miniContainer);
+
+// Ground
+const gnd=new THREE.Mesh(new THREE.PlaneGeometry(20,20),new THREE.ShadowMaterial({opacity:.15}));
+gnd.rotation.x=-Math.PI/2;gnd.receiveShadow=true;hScene.add(gnd);
+
+function resizeHero(){
+  const w=hCanvas.clientWidth,h=hCanvas.clientHeight;
+  hCam.aspect=w/h;hCam.updateProjectionMatrix();hR.setSize(w,h);
+}
+resizeHero();window.addEventListener('resize',resizeHero);
+
+/* ===== MAIN CONTAINER 3D ===== */
+const cCanvas=document.getElementById('container-3d');
+const cR=new THREE.WebGLRenderer({canvas:cCanvas,antialias:true,alpha:true});
+cR.setPixelRatio(Math.min(devicePixelRatio,2));
+cR.shadowMap.enabled=true;
+cR.setClearColor(0xe8ecf2,0);
+const cScene=new THREE.Scene();
+const cCam=new THREE.PerspectiveCamera(38,cCanvas.clientWidth/cCanvas.clientHeight,.1,100);
+cCam.position.set(7,4.5,9);
+const cCtrl=new OrbitControls(cCam,cCanvas);
+cCtrl.enableDamping=true;cCtrl.target.set(0,.8,0);
+cCtrl.minDistance=5;cCtrl.maxDistance=20;
+
+cScene.add(new THREE.AmbientLight(0x99AABB,.8));
+const cDL=new THREE.DirectionalLight(0xffffff,1);cDL.position.set(6,10,5);cDL.castShadow=true;
+cDL.shadow.mapSize.set(1024,1024);cScene.add(cDL);
+cScene.add(new THREE.PointLight(0x00C8FF,.3,20).translateX(-4).translateY(3));
+cScene.add(new THREE.PointLight(0x0066AA,.2,15).translateX(4).translateY(2).translateZ(-3));
+
+// Grid
+const gridH=new THREE.GridHelper(20,40,0xc0c8d8,0xd0d8e8);gridH.position.y=-.01;cScene.add(gridH);
+// Ground shadow
+const gnd2=new THREE.Mesh(new THREE.PlaneGeometry(20,20),new THREE.ShadowMaterial({opacity:.1}));
+gnd2.rotation.x=-Math.PI/2;gnd2.receiveShadow=true;cScene.add(gnd2);
+
+const {group:mainContainer,interactive}=buildContainerDetailed();
+cScene.add(mainContainer);
+
+function resizeC(){
+  const w=cCanvas.clientWidth,h=cCanvas.clientHeight;
+  cCam.aspect=w/h;cCam.updateProjectionMatrix();cR.setSize(w,h);
+}
+resizeC();window.addEventListener('resize',resizeC);
+
+/* ===== BUILD FUNCTIONS ===== */
+function buildContainer(scale=1){
+  const g=new THREE.Group();
+  const s=scale;
+  const W=5*s,H=1.4*s,D=2*s;
+  // Corrugated walls
+  const wallColor=0x2a3a5a;
+  const frameMat=new THREE.MeshPhysicalMaterial({color:0x1a2840,metalness:.8,roughness:.3});
+  const wallMat=new THREE.MeshPhysicalMaterial({color:wallColor,metalness:.6,roughness:.5});
+  // Floor
+  g.add(Object.assign(new THREE.Mesh(new THREE.BoxGeometry(W,.04*s,D),frameMat),{receiveShadow:true}));
+  // Walls - back
+  const bw=new THREE.Mesh(new THREE.BoxGeometry(W,H,.03*s),wallMat);bw.position.set(0,H/2,-D/2);g.add(bw);
+  // Left wall with corrugation effect
+  const lw=new THREE.Mesh(new THREE.BoxGeometry(.03*s,H,D),wallMat);lw.position.set(-W/2,H/2,0);g.add(lw);
+  // Right wall (partial - cutaway)
+  const rw=new THREE.Mesh(new THREE.BoxGeometry(.03*s,H,D*.4),new THREE.MeshPhysicalMaterial({color:wallColor,metalness:.6,roughness:.5,transparent:true,opacity:.3}));
+  rw.position.set(W/2,H/2,-D*.3);g.add(rw);
+  // Roof
+  const rf=new THREE.Mesh(new THREE.BoxGeometry(W,.03*s,D),new THREE.MeshPhysicalMaterial({color:wallColor,metalness:.5,roughness:.4,transparent:true,opacity:.2}));
+  rf.position.y=H;g.add(rf);
+  // Corner posts
+  const cpGeo=new THREE.BoxGeometry(.1*s,H,.1*s);
+  [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([x,z])=>{
+    const cp=new THREE.Mesh(cpGeo,frameMat);cp.position.set(x*W/2,H/2,z*D/2);cp.castShadow=true;g.add(cp);
+  });
+  // Corner castings (those thick corner blocks on real containers)
+  const ccGeo=new THREE.BoxGeometry(.15*s,.15*s,.15*s);
+  [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([x,z])=>{
+    [0,H].forEach(y=>{
+      const cc=new THREE.Mesh(ccGeo,new THREE.MeshPhysicalMaterial({color:0x111828,metalness:.9,roughness:.2}));
+      cc.position.set(x*W/2,y,z*D/2);g.add(cc);
+    });
+  });
+  // Top rails
+  const trX=new THREE.BoxGeometry(W,.04*s,.04*s);
+  const trZ=new THREE.BoxGeometry(.04*s,.04*s,D);
+  [-1,1].forEach(z=>{const r=new THREE.Mesh(trX,frameMat);r.position.set(0,H,z*D/2);g.add(r);});
+  [-1,1].forEach(x=>{const r=new THREE.Mesh(trZ,frameMat);r.position.set(x*W/2,H,0);g.add(r);});
+  // Door bars (front face)
+  for(let i=0;i<4;i++){
+    const bar=new THREE.Mesh(new THREE.BoxGeometry(.02*s,H*.8,.04*s),frameMat);
+    bar.position.set(-W/2+W*(i+1)/5,H*.45,D/2);g.add(bar);
+  }
+  // Forklift pockets
+  [-1,1].forEach(x=>{
+    const pocket=new THREE.Mesh(new THREE.BoxGeometry(.3*s,.08*s,.15*s),new THREE.MeshPhysicalMaterial({color:0x0a1420,metalness:.9,roughness:.2}));
+    pocket.position.set(x*W*.3,-.02*s,D/2);g.add(pocket);
+  });
+  g.position.y=.05*s;
+  return g;
+}
+
+function buildContainerDetailed(){
+  const g=new THREE.Group();
+  const shell=buildContainer(1);
+  g.add(shell);
+  const interactive=[];
+
+  const compData=[
+    {name:'LENR Reactor Modules',desc:'ENG8 LENR Catalyzed Fusion Cell array. Primary baseload power generation with high COP output and low thermal signature.',
+     specs:{Technology:'ENG8 LENR Catalyzed Fusion',Role:'Primary Baseload','Output Type':'Thermal to Electric','Form Factor':'Modular Cell Array','Thermal Signature':'Low',Maintenance:'Minimal'},
+     color:0x0066CC,emissive:0x003366,pos:[-1.6,.55,0],geo:'cylinders'},
+    {name:'Power Electronics & Inverters',desc:'Jullian Perry Battery Switching Technology. Dynamic switching for power optimization, efficiency multiplication, and heat reduction.',
+     specs:{Technology:'Jullian Perry Switching',Function:'Dynamic Power Optimization',Benefit:'Efficiency Multiplier','Heat Management':'Active Reduction','Battery Impact':'Life Extension',Control:'Autonomous'},
+     color:0x2255AA,emissive:0x112244,pos:[-.5,.45,0],size:[.8,.65,.9]},
+    {name:'Graphene Battery Bank',desc:'High-density graphene composite battery storage. Fast charge/discharge, extended cycle life, thermally stable, non-flammable.',
+     specs:{Chemistry:'Graphene Composite',Role:'Energy Storage',Capacity:'Configurable','Charge Rate':'Fast Charge',Safety:'Non-Flammable','Cycle Life':'Extended'},
+     color:0x1144AA,emissive:0x0a2255,pos:[.6,.4,0],size:[1,.55,1.2]},
+    {name:'Thermal Management System',desc:'Integrated closed-loop cooling managing heat across all generation and storage subsystems with dual-circuit redundancy.',
+     specs:{Type:'Closed Loop','Primary Coolant':'Engineered Fluid',Coverage:'Full System',Redundancy:'Dual Circuit',Monitoring:'Real-Time Sensors'},
+     color:0x336699,emissive:0x1a3355,pos:[1.6,.25,-.3],size:[.6,.3,1.2]},
+    {name:'Hydrogen / Water Management',desc:'Hydrogen and water management system supporting LENR reactor operation and thermal regulation.',
+     specs:{Function:'Reactor Support',Medium:'H2 / H2O',Integration:'LENR Cell Array',Safety:'Sealed System'},
+     color:0x2266BB,emissive:0x113355,pos:[-1.6,.2,-.7],size:[.6,.25,.5]},
+    {name:'Jullian Perry Switching System',desc:'Core switching hardware implementing the Jullian Perry battery switching protocol for dynamic power optimization.',
+     specs:{Technology:'Jullian Perry',Function:'Dynamic Switching',Efficiency:'Multiplier Effect','Thermal Impact':'Heat Reduction'},
+     color:0x3377CC,emissive:0x1a3366,pos:[-1,.2,.7],size:[.5,.25,.5]},
+    {name:'Electret Harvesting Modules',desc:'Permanently polarized electret material modules capturing ambient electromagnetic and vibrational energy. Zero fuel, zero moving parts.',
+     specs:{Type:'Electret Material',Source:'Ambient EM / Vibration',Role:'Supplemental Top-Off',Maintenance:'Zero','Moving Parts':'None',Lifespan:'Permanent'},
+     color:0x4488DD,emissive:0x224477,pos:[.2,.2,.7],size:[.6,.25,.5]},
+    {name:'AI Control & Monitoring',desc:'Neural network AI governor for real-time load balancing, predictive maintenance, remote telemetry, and autonomous system operation.',
+     specs:{System:'Neural Network',Function:'Load Optimization',Monitoring:'Predictive Maintenance',Interface:'Remote Dashboard',Protocol:'Mesh Network',Operation:'Fully Autonomous'},
+     color:0x00AADD,emissive:0x005577,pos:[1.6,.55,.4],size:[.5,.5,.6]},
+    {name:'VAWT Wind Turbine Array',desc:'Vertical-axis wind turbine mounted on container roof. Omnidirectional, quiet, low-maintenance supplemental generation.',
+     specs:{Type:'Vertical Axis',Role:'Supplemental Generation',Operation:'Omnidirectional',Noise:'Minimal','Weather Rating':'All-Condition',Maintenance:'Low'},
+     color:0x3399EE,emissive:0x1a4477,pos:[0,1.7,0],geo:'turbine'}
+  ];
+
+  compData.forEach((c,i)=>{
+    let mesh;
+    if(c.geo==='cylinders'){
+      mesh=new THREE.Group();
+      const cellMat=new THREE.MeshPhysicalMaterial({color:c.color,metalness:.7,roughness:.3,emissive:c.emissive,emissiveIntensity:.15});
+      // 2x3 array of cylinders
+      for(let row=0;row<2;row++){
+        for(let col=0;col<3;col++){
+          const cyl=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.8,12),cellMat);
+          cyl.position.set(col*.28-.28,0,row*.35-.17);
+          cyl.castShadow=true;
+          mesh.add(cyl);
+        }
+      }
+      // Rack frame
+      const rack=new THREE.Mesh(new THREE.BoxGeometry(.9,.02,.8),new THREE.MeshPhysicalMaterial({color:0x1a2840,metalness:.8,roughness:.3}));
+      rack.position.y=-.41;mesh.add(rack);
+    } else if(c.geo==='turbine'){
+      mesh=new THREE.Group();
+      const turbMat=new THREE.MeshPhysicalMaterial({color:c.color,metalness:.7,roughness:.3,emissive:c.emissive,emissiveIntensity:.2});
+      // Central hub
+      const hub=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.5,8),turbMat);
+      mesh.add(hub);
+      // Shaft
+      const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.3,6),new THREE.MeshPhysicalMaterial({color:0x1a2840,metalness:.9,roughness:.2}));
+      shaft.position.y=-.4;mesh.add(shaft);
+      // Blades (helical VAWT style)
+      for(let b=0;b<3;b++){
+        const blade=new THREE.Mesh(
+          new THREE.BoxGeometry(.02,.45,.2),
+          new THREE.MeshPhysicalMaterial({color:c.color,metalness:.5,roughness:.4,transparent:true,opacity:.8})
+        );
+        blade.rotation.y=b*(Math.PI*2/3);
+        blade.position.y=.05;
+        mesh.add(blade);
+      }
+    } else {
+      const sz=c.size||[.5,.5,.5];
+      const geo=new THREE.BoxGeometry(sz[0],sz[1],sz[2]);
+      mesh=new THREE.Mesh(geo,new THREE.MeshPhysicalMaterial({color:c.color,metalness:.6,roughness:.35,emissive:c.emissive,emissiveIntensity:.1}));
+      // Edge lines
+      const edges=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0x88AADD,transparent:true,opacity:.25}));
+      mesh.add(edges);
+      mesh.castShadow=true;
+    }
+    mesh.position.set(...c.pos);
+    mesh.userData={...c,idx:i};
+    g.add(mesh);
+    interactive.push(mesh);
+  });
+
+  // Dimension labels
+  function addLabel(text,pos){
+    const cv=document.createElement('canvas');cv.width=300;cv.height=32;
+    const cx=cv.getContext('2d');
+    cx.fillStyle='#3A4A6B';cx.font='12px Source Code Pro, monospace';cx.fillText(text,4,20);
+    const tex=new THREE.CanvasTexture(cv);
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,opacity:.7}));
+    sp.scale.set(1.8,.2,1);sp.position.set(...pos);g.add(sp);
+  }
+  addLabel('20 FT / 6.1 M',[0,-.2,1.3]);
+  addLabel('8.5 FT / 2.6 M',[-2.8,.7,0]);
+  addLabel('1 MW POWER PACK',[0,1.65,1.3]);
+
+  g.position.y=.05;
+  return {group:g,interactive};
+}
+
+/* ===== RAYCASTER ===== */
+const ray=new THREE.Raycaster();
+const mouse=new THREE.Vector2();
+const tip=document.getElementById('tip');
+const tipName=tip.querySelector('.tip-name');
+const tipDesc=tip.querySelector('.tip-desc');
+let hovered=null;
+
+cCanvas.addEventListener('mousemove',e=>{
+  const r=cCanvas.getBoundingClientRect();
+  mouse.x=((e.clientX-r.left)/r.width)*2-1;
+  mouse.y=-((e.clientY-r.top)/r.height)*2+1;
+  ray.setFromCamera(mouse,cCam);
+  const hits=ray.intersectObjects(interactive,true);
+  if(hits.length){
+    let obj=hits[0].object;
+    while(obj&&!obj.userData?.name)obj=obj.parent;
+    if(obj?.userData?.name){
+      if(hovered!==obj){
+        resetHover();
+        hovered=obj;
+        setEmissive(hovered,.4);
+        cCanvas.style.cursor='pointer';
+      }
+      tipName.textContent=obj.userData.name;
+      tipDesc.textContent=obj.userData.desc.split('.')[0]+'.';
+      tip.style.opacity='1';
+      tip.style.left=(e.clientX+14)+'px';
+      tip.style.top=(e.clientY-14)+'px';
+      return;
+    }
+  }
+  resetHover();
+});
+
+function resetHover(){
+  if(hovered){setEmissive(hovered,.1);hovered=null;}
+  tip.style.opacity='0';cCanvas.style.cursor='grab';
+}
+function setEmissive(obj,val){
+  obj.traverse(c=>{if(c.material&&c.material.emissiveIntensity!==undefined)c.material.emissiveIntensity=val;});
+}
+
+cCanvas.addEventListener('click',()=>{
+  if(!hovered)return;
+  const d=hovered.userData;
+  document.getElementById('m-title').textContent=d.name;
+  document.getElementById('m-desc').textContent=d.desc;
+  const sp=document.getElementById('m-specs');sp.innerHTML='';
+  Object.entries(d.specs).forEach(([k,v])=>{
+    sp.innerHTML+=`<div class="modal-spec"><span class="ms-key">${k}</span><span class="ms-val">${v}</span></div>`;
+  });
+  document.getElementById('modal').classList.add('open');
+});
+document.getElementById('modal-bg').onclick=()=>document.getElementById('modal').classList.remove('open');
+document.getElementById('modal-close').onclick=()=>document.getElementById('modal').classList.remove('open');
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('modal').classList.remove('open');});
+
+/* ===== TECH TABS ===== */
+document.getElementById('tech-tabs').addEventListener('click',e=>{
+  const tab=e.target.closest('.tech-tab');if(!tab)return;
+  document.querySelectorAll('.tech-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tech-panel').forEach(p=>p.classList.remove('active'));
+  tab.classList.add('active');
+  document.querySelector(`.tech-panel[data-panel="${tab.dataset.tab}"]`).classList.add('active');
+});
+
+/* ===== SCROLL REVEALS ===== */
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('vis')})},{threshold:.15});
+document.querySelectorAll('.rv').forEach(el=>obs.observe(el));
+
+/* ===== ANIMATION ===== */
+const clock=new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const t=clock.getElapsedTime();
+  hCtrl.update();
+  // Rotate hero turbine
+  miniContainer.traverse(c=>{/* auto-rotates via controls */});
+  hR.render(hScene,hCam);
+  cCtrl.update();
+  // Rotate VAWT blades
+  interactive.forEach(obj=>{
+    if(obj.userData?.geo==='turbine'){
+      obj.children.forEach((c,i)=>{if(i>1)c.rotation.y+=.01;});
+    }
+  });
+  cR.render(cScene,cCam);
+}
+animate();
+</script>
+</body>
+</html>
